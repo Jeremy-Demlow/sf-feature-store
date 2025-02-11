@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "sf-feature-store"
+  site-url: "https://Jeremy-Demlow.github.io/sf-feature-store"
+  description: "Examples of Using Snowflakes Feature Store"
+  repo-branch: main
+  repo-url: "https://github.com/Jeremy-Demlow/sf-feature-store"
