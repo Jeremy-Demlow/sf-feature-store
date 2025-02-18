@@ -9,32 +9,123 @@ from dataclasses import dataclass
 from fastcore.basics import listify
 import snowflake.snowpark.functions as F
 from snowflake.snowpark import DataFrame, Window
+from pydantic import BaseModel, Field, validator
+import pandas as pd
+
+
+# Import our new modules
+from .exceptions import ValidationError
+from .logging import logger
+from .config import BaseModel
 
 # %% auto 0
-__all__ = ['Transform', 'WindowSpec', 'window_agg', 'fill_na', 'date_diff', 'moving_agg', 'cumulative_agg', 'apply_transforms']
+__all__ = ['TransformConfig', 'Transform', 'ValidationMixin', 'WindowSpec', 'WindowTransform', 'window_agg', 'FillNATransform',
+           'fill_na', 'DateDiffTransform', 'date_diff', 'MovingAggTransform', 'moving_agg', 'CumulativeAggTransform',
+           'cumulative_agg', 'apply_transforms']
 
 # %% ../nbs/02_transforms.ipynb 3
+class TransformConfig(BaseModel):
+    """Configuration for data transformations"""
+    name: str
+    description: Optional[str] = None
+    validate_output: bool = Field(True, description="Whether to validate transform output")
+    
+    # Validation settings
+    null_threshold: float = Field(0.1, ge=0, le=1, description="Maximum allowed null ratio")
+    cardinality_threshold: Optional[int] = Field(None, description="Maximum distinct values")
+    expected_types: Optional[List[str]] = Field(
+        None, 
+        description="List of acceptable types (e.g., ['DECIMAL', 'DOUBLE', 'NUMBER'] for numeric)"
+    )
+
+    @validator('expected_types')
+    def validate_types(cls, v):
+        if v is not None:
+            valid_types = {'DECIMAL', 'DOUBLE', 'NUMBER', 'INT', 'LONG', 'STRING', 'BOOLEAN', 'DATE', 'TIMESTAMP'}
+            for t in v:
+                if t.upper() not in valid_types:
+                    raise ValueError(f"Invalid type: {t}. Must be one of {valid_types}")
+        return v
+
+
+# %% ../nbs/02_transforms.ipynb 4
 class Transform(Protocol):
-    "Protocol for feature transformations"
+    """Protocol for feature transformations"""
     def __call__(self, df: DataFrame) -> DataFrame: ...
+    
+    @property
+    def config(self) -> TransformConfig: ...
 
 # %% ../nbs/02_transforms.ipynb 5
+class ValidationMixin:
+    """Mixin class providing validation methods for transforms"""
+    def validate_dataframe(self, df: DataFrame, columns: List[str]) -> None:
+        """Validate DataFrame columns against configuration"""
+        if not hasattr(self, 'config'):
+            return
+            
+        try:
+            # Check for nulls
+            if self.config.null_threshold < 1.0:
+                for col in columns:
+                    null_count = df.filter(F.col(col).is_null()).count()
+                    total_count = df.count()
+                    null_ratio = null_count / total_count if total_count > 0 else 0
+                    
+                    if null_ratio > self.config.null_threshold:
+                        raise ValidationError(
+                            f"Column {col} has {null_ratio:.1%} null values, "
+                            f"exceeding threshold of {self.config.null_threshold:.1%}"
+                        )
+                        
+            # Check cardinality
+            if self.config.cardinality_threshold:
+                for col in columns:
+                    distinct_count = df.select(col).distinct().count()
+                    if distinct_count > self.config.cardinality_threshold:
+                        raise ValidationError(
+                            f"Column {col} has {distinct_count} distinct values, "
+                            f"exceeding threshold of {self.config.cardinality_threshold}"
+                        )
+                        
+            # Check data types if specified
+            if self.config.expected_types:
+                for col in columns:
+                    col_type = str(df.schema[col].datatype)
+                    valid_type = any(
+                        col_type.upper().startswith(exp_type.upper()) 
+                        for exp_type in self.config.expected_types
+                    )
+                    if not valid_type:
+                        raise ValidationError(
+                            f"Column {col} has type {col_type}, "
+                            f"expected one of {self.config.expected_types}"
+                        )
+                        
+            logger.debug(f"Validation passed for columns: {columns}")
+            
+        except Exception as e:
+            if not isinstance(e, ValidationError):
+                raise ValidationError(f"Validation failed: {str(e)}")
+            raise
+
+# %% ../nbs/02_transforms.ipynb 6
 @dataclass
 class WindowSpec:
-    "Configuration for window-based transformations"
+    """Configuration for window-based transformations"""
     partition_by: Optional[Union[str, List[str]]] = None
     order_by: Optional[Union[str, List[str]]] = None
     window_size: Optional[int] = None
     
     def __post_init__(self):
-        "Convert string inputs to lists"
+        """Convert string inputs to lists"""
         if isinstance(self.partition_by, str):
             self.partition_by = [self.partition_by]
         if isinstance(self.order_by, str):
             self.order_by = [self.order_by]
             
     def to_window(self) -> Window:
-        "Convert to Snowpark Window specification"
+        """Convert to Snowpark Window specification"""
         window = Window.partition_by(self.partition_by or []) \
                       .order_by(self.order_by or [])
         
@@ -45,130 +136,309 @@ class WindowSpec:
             )
         return window
 
+# %% ../nbs/02_transforms.ipynb 7
+class WindowTransform(ValidationMixin):
+    """Window-based aggregation transform"""
+    
+    def __init__(
+        self,
+        agg_cols: Dict[str, List[str]],
+        window_spec: WindowSpec,
+        config: Optional[TransformConfig] = None
+    ):
+        self._agg_cols = agg_cols
+        self._window_spec = window_spec
+        self._config = config or TransformConfig(
+            name="window_transform",
+            description="Window-based aggregation"
+        )
+        
+    @property
+    def config(self) -> TransformConfig:
+        return self._config
+        
+    def __call__(self, df: DataFrame) -> DataFrame:
+        """Apply window-based aggregations"""
+        try:
+            window = self._window_spec.to_window()
+            new_cols = []
+            
+            for col, aggs in self._agg_cols.items():
+                for agg in aggs:
+                    agg_func = getattr(F, agg.lower())
+                    new_col = f"{agg.upper()}_{col.upper()}"
+                    new_cols.append(new_col)
+                    df = df.with_column(
+                        new_col,
+                        agg_func(F.col(col)).over(window)
+                    )
+                    
+            if self.config.validate_output:
+                self.validate_dataframe(df, new_cols)
+                
+            return df
+            
+        except Exception as e:
+            logger.error(f"Window transform failed: {str(e)}")
+            raise
 
-# %% ../nbs/02_transforms.ipynb 6
+# %% ../nbs/02_transforms.ipynb 8
 def window_agg(
     agg_cols: Dict[str, List[str]],
-    window_spec: WindowSpec
+    window_spec: WindowSpec,
+    config: Optional[TransformConfig] = None
 ) -> Transform:
-    """Apply window-based aggregations
+    """Create window-based aggregation transform
     
     Args:
         agg_cols: Dictionary mapping columns to aggregation functions
         window_spec: Window specification for the aggregation
+        config: Optional transform configuration
         
     Returns:
         Transform function
         
     Example:
+        >>> config = TransformConfig(
+        ...     name="customer_metrics",
+        ...     null_threshold=0.05,
+        ...     expected_type="DOUBLE"
+        ... )
         >>> spec = WindowSpec(partition_by='customer_id', order_by='date')
-        >>> aggs = {'amount': ['SUM', 'AVG']}
-        >>> window_agg(aggs, spec)(df)
+        >>> transform = window_agg({'amount': ['SUM', 'AVG']}, spec, config)
     """
-    def _inner(df: DataFrame) -> DataFrame:
-        # Use the WindowSpec's to_window method
-        window = window_spec.to_window()
-            
-        for col, aggs in agg_cols.items():
-            for agg in aggs:
-                agg_func = getattr(F, agg.lower())
-                # Snowflake typically uppercases column names
-                new_col = f"{agg.upper()}_{col.upper()}"
-                df = df.with_column(
-                    new_col,
-                    agg_func(F.col(col)).over(window)
-                )
-        return df
-    return _inner
+    return WindowTransform(agg_cols, window_spec, config)
 
-# %% ../nbs/02_transforms.ipynb 8
-def fill_na(cols: Union[str, List[str]], fill_value: Union[int, float, str] = 0) -> Transform:
-    """Fill NA values in specified columns, matching the column type
+# %% ../nbs/02_transforms.ipynb 9
+class FillNATransform(ValidationMixin):
+    def __init__(
+        self, 
+        cols: Union[str, List[str]], 
+        fill_value: Union[int, float, str] = 0,
+        config: Optional[TransformConfig] = None
+    ):
+        self.cols = listify(cols)
+        self.fill_value = fill_value
+        self._config = config or TransformConfig(
+            name="fill_na_transform",
+            description=f"Fill NA values with {fill_value}"
+        )
+        
+    @property
+    def config(self) -> TransformConfig:
+        return self._config
+        
+    def __call__(self, df: DataFrame) -> DataFrame:
+        try:
+            for col in self.cols:
+                actual_col = next(
+                    (c for c in df.schema.names if c.upper() == col.upper()),
+                    None
+                )
+                if actual_col is None:
+                    raise ValueError(f"Column {col} not found in DataFrame")
+                
+                col_type = df.schema[actual_col].datatype
+                typed_value = (
+                    int(self.fill_value) if str(col_type).startswith(('Long', 'Int')) 
+                    else float(self.fill_value) if str(col_type).startswith('Double') 
+                    else str(self.fill_value)
+                )
+                
+                df = df.na.fill({actual_col: typed_value})
+                
+            if self.config.validate_output:
+                self.validate_dataframe(df, self.cols)
+                
+            return df
+            
+        except Exception as e:
+            logger.error(f"Fill NA transform failed: {str(e)}")
+            raise
+
+# %% ../nbs/02_transforms.ipynb 10
+def fill_na(
+    cols: Union[str, List[str]], 
+    fill_value: Union[int, float, str] = 0,
+    config: Optional[TransformConfig] = None
+) -> Transform:
+    """Create transform to fill NA values
     
     Args:
         cols: Column(s) to fill NA values in
-        fill_value: Value to use for filling NAs (will be cast to match column type)
+        fill_value: Value to use for filling NAs
+        config: Optional transform configuration
         
     Returns:
         Transform function
         
     Example:
-        >>> df = session.create_dataframe([[1, None], [2, 3]], ['A', 'B'])
-        >>> fill_na('B', 0)(df).collect()
-        [[1, 0], [2, 3]]
+        >>> config = TransformConfig(
+        ...     name="fill_scores",
+        ...     null_threshold=1.0
+        ... )
+        >>> transform = fill_na(['score'], fill_value=0, config=config)
     """
-    cols = listify(cols)
-    def _inner(df: DataFrame) -> DataFrame:
-        for col in cols:
+    return FillNATransform(cols, fill_value, config)
+
+
+# %% ../nbs/02_transforms.ipynb 11
+class DateDiffTransform(ValidationMixin):
+    """Calculate date difference between column and reference"""
+    
+    def __init__(
+        self,
+        col: str,
+        new_col: str,
+        reference_date: Optional[str] = None,
+        date_part: str = 'day',
+        config: Optional[TransformConfig] = None
+    ):
+        self.col = col
+        self.new_col = new_col.upper()
+        self.reference_date = reference_date
+        self.date_part = date_part
+        self._config = config or TransformConfig(
+            name="date_diff_transform",
+            description=f"Calculate {date_part} difference from {col}",
+            expected_type="INT"  # Date diffs return integers
+        )
+        
+    @property
+    def config(self) -> TransformConfig:
+        return self._config
+        
+    def __call__(self, df: DataFrame) -> DataFrame:
+        try:
             # Find actual column name (case-insensitive)
-            actual_col = next(
-                (c for c in df.schema.names if c.upper() == col.upper()),
+            col_actual = next(
+                (c for c in df.columns if c.upper() == self.col.upper()),
                 None
             )
-            if actual_col is None:
-                raise ValueError(f"Column {col} not found in DataFrame")
+            if col_actual is None:
+                raise ValueError(f"Column {self.col} not found in DataFrame")
             
-            # Get column type
-            col_type = df.schema[actual_col].datatype
+            reference = (F.to_date(F.lit(self.reference_date)) 
+                        if self.reference_date
+                        else F.current_date())
             
-            # Cast fill value to match column type
-            typed_value = (
-                int(fill_value) if str(col_type).startswith(('Long', 'Int')) 
-                else float(fill_value) if str(col_type).startswith('Double') 
-                else str(fill_value)
+            df = df.with_column(
+                self.new_col,
+                F.datediff(self.date_part, F.col(col_actual), reference)
             )
             
-            df = df.na.fill({actual_col: typed_value})
-        return df
-    return _inner
+            if self.config.validate_output:
+                self.validate_dataframe(df, [self.new_col])
+                
+            return df
+            
+        except Exception as e:
+            logger.error(f"Date diff transform failed: {str(e)}")
+            raise
 
 
-# %% ../nbs/02_transforms.ipynb 10
+
+# %% ../nbs/02_transforms.ipynb 12
 def date_diff(
     col: str,
     new_col: str,
     reference_date: Optional[str] = None,
-    date_part: str = 'day'
+    date_part: str = 'day',
+    config: Optional[TransformConfig] = None
 ) -> Transform:
-    """Calculate date difference between column and reference
+    """Create date difference transform
     
     Args:
         col: Date column to calculate difference from
         new_col: Name for the new difference column
         reference_date: Reference date (default: current_date)
         date_part: Part to calculate difference in ('day', 'month', etc.)
+        config: Optional transform configuration
         
     Returns:
         Transform function
         
     Example:
-        >>> df = session.create_dataframe([['2024-01-01']], ['date'])
-        >>> date_diff('date', 'days_ago', '2024-02-01')(df).collect()
-        [['2024-01-01', 31]]
+        >>> config = TransformConfig(
+        ...     name="membership_length",
+        ...     null_threshold=0.0  # No nulls allowed
+        ... )
+        >>> transform = date_diff('join_date', 'days_member', config=config)
     """
-    def _inner(df: DataFrame) -> DataFrame:
-        # Ensure column exists (case-insensitive)
-        col_actual = [c for c in df.columns if c.upper() == col.upper()][0]
-        
-        reference = (F.to_date(F.lit(reference_date)) 
-                    if isinstance(reference_date, str)
-                    else F.current_date())
-        
-        return df.with_column(
-            new_col.upper(),  # Standardize output column name
-            F.datediff(date_part, F.col(col_actual), reference)
-        )
-    return _inner
+    return DateDiffTransform(col, new_col, reference_date, date_part, config)
 
-# %% ../nbs/02_transforms.ipynb 12
+# %% ../nbs/02_transforms.ipynb 13
+class MovingAggTransform(ValidationMixin):
+    """Calculate moving window aggregations"""
+    
+    def __init__(
+        self,
+        cols: Union[str, List[str]],
+        window_sizes: List[int],
+        agg_funcs: List[str] = ['SUM', 'AVG'],
+        partition_by: Optional[List[str]] = None,
+        order_by: Optional[List[str]] = None,
+        config: Optional[TransformConfig] = None
+    ):
+        self.cols = listify(cols)
+        self.window_sizes = window_sizes
+        self.agg_funcs = agg_funcs
+        self.partition_by = partition_by
+        self.order_by = order_by
+        self._config = config or TransformConfig(
+            name="moving_agg_transform",
+            description=f"Moving {', '.join(agg_funcs)} over {window_sizes} periods"
+        )
+        
+    @property
+    def config(self) -> TransformConfig:
+        return self._config
+        
+    def __call__(self, df: DataFrame) -> DataFrame:
+        try:
+            new_cols = []
+            
+            for col in self.cols:
+                for size in self.window_sizes:
+                    spec = WindowSpec(
+                        partition_by=self.partition_by,
+                        order_by=self.order_by,
+                        window_size=size
+                    )
+                    
+                    window = spec.to_window()
+                    
+                    for agg in self.agg_funcs:
+                        agg_func = getattr(F, agg.lower())
+                        new_col = f"{agg.upper()}_{col.upper()}_{size}"
+                        new_cols.append(new_col)
+                        
+                        # Cast result to DOUBLE
+                        df = df.with_column(
+                            new_col,
+                            agg_func(F.col(col)).over(window).cast('DOUBLE')
+                        )
+            
+            if self.config.validate_output:
+                self.validate_dataframe(df, new_cols)
+                
+            return df
+            
+        except Exception as e:
+            logger.error(f"Moving aggregation transform failed: {str(e)}")
+            raise
+
+
+# %% ../nbs/02_transforms.ipynb 14
 def moving_agg(
     cols: Union[str, List[str]],
     window_sizes: List[int],
     agg_funcs: List[str] = ['SUM', 'AVG'],
     partition_by: Optional[List[str]] = None,
-    order_by: Optional[List[str]] = None
+    order_by: Optional[List[str]] = None,
+    config: Optional[TransformConfig] = None
 ) -> Transform:
-    """Calculate moving window aggregations
+    """Create moving aggregation transform
     
     Args:
         cols: Columns to aggregate
@@ -176,58 +446,123 @@ def moving_agg(
         agg_funcs: List of aggregation functions
         partition_by: Columns to partition by
         order_by: Columns to order by
+        config: Optional transform configuration
         
     Returns:
         Transform function
         
     Example:
-        >>> moving_agg('amount', [3, 7], ['SUM'], ['customer_id'], ['date'])(df)
+        >>> config = TransformConfig(
+        ...     name="rolling_metrics",
+        ...     expected_type="DOUBLE"
+        ... )
+        >>> transform = moving_agg(
+        ...     'amount', 
+        ...     [7, 30], 
+        ...     ['SUM'], 
+        ...     ['customer_id'], 
+        ...     ['date'],
+        ...     config
+        ... )
     """
-    cols = listify(cols)
-    def _inner(df: DataFrame) -> DataFrame:
-        for col in cols:
-            for size in window_sizes:
+    return MovingAggTransform(
+        cols, window_sizes, agg_funcs, 
+        partition_by, order_by, config
+    )
+
+# %% ../nbs/02_transforms.ipynb 15
+class CumulativeAggTransform(ValidationMixin):
+    """Calculate cumulative aggregations"""
+    
+    def __init__(
+        self,
+        cols: Union[str, List[str]],
+        agg_funcs: List[str] = ['SUM'],
+        partition_by: Optional[List[str]] = None,
+        order_by: Optional[List[str]] = None,
+        config: Optional[TransformConfig] = None
+    ):
+        self.cols = listify(cols)
+        self.agg_funcs = agg_funcs
+        self.partition_by = partition_by
+        self.order_by = order_by
+        self._config = config or TransformConfig(
+            name="cumulative_agg_transform",
+            description=f"Cumulative {', '.join(agg_funcs)}"
+        )
+        
+    @property
+    def config(self) -> TransformConfig:
+        return self._config
+        
+    def __call__(self, df: DataFrame) -> DataFrame:
+        try:
+            new_cols = []
+            
+            for col in self.cols:
                 spec = WindowSpec(
-                    partition_by=partition_by,
-                    order_by=order_by,
-                    window_size=size
+                    partition_by=self.partition_by,
+                    order_by=self.order_by
                 )
-                aggs = {col: agg_funcs}
-                df = window_agg(aggs, spec)(df)
-        return df
-    return _inner
+                window = spec.to_window()
+                
+                for agg in self.agg_funcs:
+                    agg_func = getattr(F, agg.lower())
+                    new_col = f"CUM_{agg.upper()}_{col.upper()}"
+                    new_cols.append(new_col)
+                    
+                    df = df.with_column(
+                        new_col,
+                        agg_func(F.col(col)).over(window)
+                    )
+            
+            if self.config.validate_output:
+                self.validate_dataframe(df, new_cols)
+                
+            return df
+            
+        except Exception as e:
+            logger.error(f"Cumulative aggregation transform failed: {str(e)}")
+            raise
 
-
-# %% ../nbs/02_transforms.ipynb 13
+# %% ../nbs/02_transforms.ipynb 16
 def cumulative_agg(
     cols: Union[str, List[str]],
     agg_funcs: List[str] = ['SUM'],
     partition_by: Optional[List[str]] = None,
-    order_by: Optional[List[str]] = None
+    order_by: Optional[List[str]] = None,
+    config: Optional[TransformConfig] = None
 ) -> Transform:
-    """Calculate cumulative aggregations
+    """Create cumulative aggregation transform
     
     Args:
         cols: Columns to aggregate
         agg_funcs: List of aggregation functions
         partition_by: Columns to partition by
         order_by: Columns to order by
+        config: Optional transform configuration
         
     Returns:
         Transform function
         
     Example:
-        >>> cumulative_agg('amount', ['SUM'], ['customer_id'], ['date'])(df)
+        >>> config = TransformConfig(
+        ...     name="running_totals",
+        ...     expected_type="DOUBLE"
+        ... )
+        >>> transform = cumulative_agg(
+        ...     'amount', 
+        ...     ['SUM'], 
+        ...     ['customer_id'], 
+        ...     ['date'],
+        ...     config
+        ... )
     """
-    return moving_agg(
-        cols=cols,
-        window_sizes=[None],  # None means unbounded
-        agg_funcs=agg_funcs,
-        partition_by=partition_by,
-        order_by=order_by
+    return CumulativeAggTransform(
+        cols, agg_funcs, partition_by, order_by, config
     )
 
-# %% ../nbs/02_transforms.ipynb 14
+# %% ../nbs/02_transforms.ipynb 17
 def apply_transforms(df: DataFrame, transforms: List[Transform]) -> DataFrame:
     """Apply a list of transformations to a DataFrame
     
@@ -240,12 +575,17 @@ def apply_transforms(df: DataFrame, transforms: List[Transform]) -> DataFrame:
         
     Example:
         >>> transforms = [
-        ...     fill_na(['score']),
-        ...     date_diff('date', 'days_ago')
+        ...     fill_na(['score'], config=TransformConfig(name='fill_scores')),
+        ...     date_diff('date', 'days_ago', config=TransformConfig(name='time_features'))
         ... ]
-        >>> apply_transforms(df, transforms)
+        >>> df = apply_transforms(df, transforms)
     """
     for transform in transforms:
-        df = transform(df)
+        try:
+            logger.debug(f"Applying transform: {transform.config.name}")
+            df = transform(df)
+        except Exception as e:
+            logger.error(f"Transform {transform.config.name} failed: {str(e)}")
+            raise
     return df
 
