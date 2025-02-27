@@ -1,0 +1,14 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - 01_config.ipynb
+      - 02_expections.ipynb
+      - 03_feature_view.ipynb
+      - 03_logging.ipynb
+      - 04_core.ipynb
+      - 05_connection.ipynb
+      - 06_transforms.ipynb
+      - 08_example_functions.ipynb
+      - 09_simple_example.ipynb
+      - 99_base.ipynb

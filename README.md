@@ -181,3 +181,58 @@ or from [pypi](https://pypi.org/project/sf-feature-store/)
 ``` sh
 $ pip install sf_feature_store
 ```
+
+
+Hi Everyone, 
+
+Network rules specify the external destinations (hostnames, IPs, ports) that your container service is allowed to communicate with. They define the boundaries of where your service can send network traffic. Think of them as a whitelist of destinations. The values from SYSTEM$GET_PRIVATELINK_CONFIG() are what you should be focusing on if you want to work through your privatelink connection. You have to create access points for these to work.
+
+1. First, identify exactly what your service needs:
+```sql
+-- Get the exact PrivateLink endpoints for your account
+SELECT SYSTEM$GET_PRIVATELINK_CONFIG();
+```
+2. Create a targeted network rule:
+```sql
+-- Create a network rule specifically for Snowflake's endpoints
+CREATE OR REPLACE NETWORK RULE jupyter_snowflake_connectivity
+  MODE = EGRESS
+  TYPE = PRIVATE_HOST_PORT
+  VALUE_LIST = (
+    '<your-spcs-auth-privatelink-url-value>',
+    '<your-app-service-privatelink-url-value>'
+  );
+```
+This approach only grants access to the specific Snowflake PrivateLink endpoints needed for authentication and accessing your service, rather than including S3 and PyPI which may not be required for basic functionality.
+
+3. For additional functionality:
+
+If your Jupyter service needs to access specific packages or data sources, you can create separate, purpose-specific network rules:
+```sql
+-- Only add if your service needs to fetch packages
+CREATE OR REPLACE NETWORK RULE jupyter_package_access
+  MODE = EGRESS
+  TYPE = HOST_PORT
+  VALUE_LIST = ('pypi.org:443', 'files.pythonhosted.org:443');
+
+-- Only add if your service needs S3 access
+CREATE OR REPLACE NETWORK RULE jupyter_s3_access
+  MODE = EGRESS
+  TYPE = PRIVATE_HOST_PORT
+  VALUE_LIST = ('<your-specific-s3-bucket>.s3.<your-region>.amazonaws.com');
+```
+
+4. Create a more targeted EAI:
+
+```sql
+-- Include only the network rules your service actually needs
+CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION jupyter_eai
+  ALLOWED_NETWORK_RULES = (jupyter_snowflake_connectivity)
+  ENABLED = true;
+
+-- If you added the optional rules above, you might use:
+-- ALLOWED_NETWORK_RULES = (jupyter_snowflake_connectivity, jupyter_package_access, jupyter_s3_access)
+```
+This approach follows the principle of least privilege by only granting the specific access needed for the service to function, which is a security best practice.
+
+For your POC environment, you might start with just the Snowflake PrivateLink endpoints and then add additional access only if you encounter specific functionality issues.
