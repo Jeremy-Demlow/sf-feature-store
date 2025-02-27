@@ -9,6 +9,7 @@ website:
       - 04_core.ipynb
       - 05_connection.ipynb
       - 06_transforms.ipynb
+      - 07_manager.ipynb
       - 08_example_functions.ipynb
       - 09_simple_example.ipynb
       - 99_base.ipynb
