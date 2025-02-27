@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="A comprehensive guide to setting up and using the Snowflake Feature Store for ML workflows.">
+
+<title>End-to-End Feature Store Example – sf-feature-store</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-ae44de7e3b26b230a7801128389852ee.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="End-to-End Feature Store Example – sf-feature-store">
+<meta property="og:description" content="A comprehensive guide to setting up and using the Snowflake Feature Store for ML workflows.">
+<meta property="og:site_name" content="sf-feature-store">
+<meta name="twitter:title" content="End-to-End Feature Store Example – sf-feature-store">
+<meta name="twitter:description" content="A comprehensive guide to setting up and using the Snowflake Feature Store for ML workflows.">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">sf-feature-store</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./simple_example.html">End-to-End Feature Store Example</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Snowflake Feature Store</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./config.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Configuration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./expections.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Expections</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./feature_view.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Feature Views</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./logging.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Expections</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./core.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Core Functionality</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./connection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Connection</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./transforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Feature Transforms</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./manager.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Manager (Features)</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./example_functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Example Module</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./simple_example.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">End-to-End Feature Store Example</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./kaggle_example.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Kaggle Competition Example</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./base.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NAME</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#data-generation" id="toc-data-generation" class="nav-link active" data-scroll-target="#data-generation">Data Generation</a></li>
+  <li><a href="#step-1-setting-up-the-feature-store" id="toc-step-1-setting-up-the-feature-store" class="nav-link" data-scroll-target="#step-1-setting-up-the-feature-store">Step 1: Setting Up the Feature Store</a>
+  <ul class="collapse">
+  <li><a href="#required-permissions" id="toc-required-permissions" class="nav-link" data-scroll-target="#required-permissions">Required Permissions</a></li>
+  <li><a href="#why-permanent-vs-temporary" id="toc-why-permanent-vs-temporary" class="nav-link" data-scroll-target="#why-permanent-vs-temporary">Why Permanent vs Temporary?</a></li>
+  </ul></li>
+  <li><a href="#step-2-data-generation-and-loading" id="toc-step-2-data-generation-and-loading" class="nav-link" data-scroll-target="#step-2-data-generation-and-loading">Step 2: Data Generation and Loading</a>
+  <ul class="collapse">
+  <li><a href="#why-this-structure" id="toc-why-this-structure" class="nav-link" data-scroll-target="#why-this-structure">Why This Structure?</a></li>
+  <li><a href="#why-ltv-prediction" id="toc-why-ltv-prediction" class="nav-link" data-scroll-target="#why-ltv-prediction">Why LTV Prediction?</a></li>
+  <li><a href="#data-structure" id="toc-data-structure" class="nav-link" data-scroll-target="#data-structure">Data Structure</a></li>
+  </ul></li>
+  <li><a href="#step-3-entity-creation" id="toc-step-3-entity-creation" class="nav-link" data-scroll-target="#step-3-entity-creation">Step 3: Entity Creation</a>
+  <ul class="collapse">
+  <li><a href="#why-entities-matter" id="toc-why-entities-matter" class="nav-link" data-scroll-target="#why-entities-matter">Why Entities Matter</a></li>
+  <li><a href="#entity-best-practices" id="toc-entity-best-practices" class="nav-link" data-scroll-target="#entity-best-practices">Entity Best Practices</a></li>
+  <li><a href="#entity-design-for-ltv" id="toc-entity-design-for-ltv" class="nav-link" data-scroll-target="#entity-design-for-ltv">Entity Design for LTV</a></li>
+  <li><a href="#key-points-about-this-implementation" id="toc-key-points-about-this-implementation" class="nav-link" data-scroll-target="#key-points-about-this-implementation">Key Points About This Implementation</a></li>
+  </ul></li>
+  <li><a href="#step-4-feature-configuration" id="toc-step-4-feature-configuration" class="nav-link" data-scroll-target="#step-4-feature-configuration">Step 4: Feature Configuration</a>
+  <ul class="collapse">
+  <li><a href="#feature-configuration-concepts" id="toc-feature-configuration-concepts" class="nav-link" data-scroll-target="#feature-configuration-concepts">Feature Configuration Concepts</a></li>
+  <li><a href="#why-configuration-matters" id="toc-why-configuration-matters" class="nav-link" data-scroll-target="#why-configuration-matters">Why Configuration Matters</a></li>
+  <li><a href="#ltv-feature-configuration" id="toc-ltv-feature-configuration" class="nav-link" data-scroll-target="#ltv-feature-configuration">LTV Feature Configuration</a></li>
+  </ul></li>
+  <li><a href="#step-5-feature-transformations" id="toc-step-5-feature-transformations" class="nav-link" data-scroll-target="#step-5-feature-transformations">Step 5: Feature Transformations</a>
+  <ul class="collapse">
+  <li><a href="#why-transformations-matter" id="toc-why-transformations-matter" class="nav-link" data-scroll-target="#why-transformations-matter">Why Transformations Matter</a></li>
+  <li><a href="#types-of-transformations" id="toc-types-of-transformations" class="nav-link" data-scroll-target="#types-of-transformations">Types of Transformations</a></li>
+  <li><a href="#ltv-specific-transformations" id="toc-ltv-specific-transformations" class="nav-link" data-scroll-target="#ltv-specific-transformations">LTV-Specific Transformations</a></li>
+  <li><a href="#best-practices-for-transformations" id="toc-best-practices-for-transformations" class="nav-link" data-scroll-target="#best-practices-for-transformations">Best Practices for Transformations</a></li>
+  <li><a href="#example-usage" id="toc-example-usage" class="nav-link" data-scroll-target="#example-usage">Example Usage</a></li>
+  </ul></li>
+  <li><a href="#step-6-feature-view-creation" id="toc-step-6-feature-view-creation" class="nav-link" data-scroll-target="#step-6-feature-view-creation">Step 6: Feature View Creation</a>
+  <ul class="collapse">
+  <li><a href="#what-is-a-feature-view" id="toc-what-is-a-feature-view" class="nav-link" data-scroll-target="#what-is-a-feature-view">What is a Feature View?</a></li>
+  <li><a href="#why-feature-views-matter" id="toc-why-feature-views-matter" class="nav-link" data-scroll-target="#why-feature-views-matter">Why Feature Views Matter</a></li>
+  <li><a href="#ltv-feature-view-design" id="toc-ltv-feature-view-design" class="nav-link" data-scroll-target="#ltv-feature-view-design">LTV Feature View Design</a></li>
+  <li><a href="#best-practices-for-feature-views" id="toc-best-practices-for-feature-views" class="nav-link" data-scroll-target="#best-practices-for-feature-views">Best Practices for Feature Views</a></li>
+  </ul></li>
+  <li><a href="#step-7-feature-monitoring" id="toc-step-7-feature-monitoring" class="nav-link" data-scroll-target="#step-7-feature-monitoring">Step 7: Feature Monitoring</a>
+  <ul class="collapse">
+  <li><a href="#why-monitor-features" id="toc-why-monitor-features" class="nav-link" data-scroll-target="#why-monitor-features">Why Monitor Features?</a></li>
+  <li><a href="#types-of-monitoring" id="toc-types-of-monitoring" class="nav-link" data-scroll-target="#types-of-monitoring">Types of Monitoring</a></li>
+  <li><a href="#ltv-specific-monitoring" id="toc-ltv-specific-monitoring" class="nav-link" data-scroll-target="#ltv-specific-monitoring">LTV-Specific Monitoring</a></li>
+  <li><a href="#example-usage-1" id="toc-example-usage-1" class="nav-link" data-scroll-target="#example-usage-1">Example Usage</a></li>
+  </ul></li>
+  <li><a href="#step-8-training-data-generation" id="toc-step-8-training-data-generation" class="nav-link" data-scroll-target="#step-8-training-data-generation">Step 8: Training Data Generation</a>
+  <ul class="collapse">
+  <li><a href="#why-training-data-generation-matters" id="toc-why-training-data-generation-matters" class="nav-link" data-scroll-target="#why-training-data-generation-matters">Why Training Data Generation Matters</a></li>
+  <li><a href="#ltv-training-data-requirements" id="toc-ltv-training-data-requirements" class="nav-link" data-scroll-target="#ltv-training-data-requirements">LTV Training Data Requirements</a></li>
+  <li><a href="#best-practices-for-training-data" id="toc-best-practices-for-training-data" class="nav-link" data-scroll-target="#best-practices-for-training-data">Best Practices for Training Data</a></li>
+  </ul></li>
+  <li><a href="#conclusion-and-next-steps" id="toc-conclusion-and-next-steps" class="nav-link" data-scroll-target="#conclusion-and-next-steps">Conclusion and Next Steps</a>
+  <ul class="collapse">
+  <li><a href="#what-weve-built" id="toc-what-weve-built" class="nav-link" data-scroll-target="#what-weve-built">What We’ve Built</a></li>
+  <li><a href="#potential-enhancements" id="toc-potential-enhancements" class="nav-link" data-scroll-target="#potential-enhancements">Potential Enhancements</a></li>
+  <li><a href="#best-practices" id="toc-best-practices" class="nav-link" data-scroll-target="#best-practices">Best Practices</a></li>
+  <li><a href="#using-this-template" id="toc-using-this-template" class="nav-link" data-scroll-target="#using-this-template">Using This Template</a></li>
+  <li><a href="#resources" id="toc-resources" class="nav-link" data-scroll-target="#resources">Resources</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/Jeremy-Demlow/sf-feature-store/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div><div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="simple_example.html.md"><i class="bi bi-file-code"></i>CommonMark</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">End-to-End Feature Store Example</h1>
+</div>
+
+<div>
+  <div class="description">
+    A comprehensive guide to setting up and using the Snowflake Feature Store for ML workflows.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<section id="data-generation" class="level2">
+<h2 class="anchored" data-anchor-id="data-generation">Data Generation</h2>
+<p>First, we’ll create some example customer data:</p>
+<div id="cell-3" class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> datetime, timedelta</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> snowflake.snowpark.functions <span class="im">as</span> F</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.connection <span class="im">import</span> get_connection</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.manager <span class="im">import</span> FeatureStoreManager</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.config <span class="im">import</span> (</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    FeatureViewConfig, FeatureConfig, RefreshConfig, </span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    FeatureValidationConfig</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.transforms <span class="im">import</span> (</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    Transform, TransformConfig, moving_agg, </span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    fill_na, date_diff</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.examples <span class="im">import</span> (</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    get_example_data, create_feature_configs</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.logging <span class="im">import</span> logger</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>/Users/jdemlow/miniconda3/envs/feature-store/lib/python3.11/site-packages/pydantic/_internal/_fields.py:192: UserWarning: Field name "schema" in "ConnectionConfig" shadows an attribute in parent "BaseModel"
+  warnings.warn(</code></pre>
+</div>
+</div>
+</section>
+<section id="step-1-setting-up-the-feature-store" class="level2">
+<h2 class="anchored" data-anchor-id="step-1-setting-up-the-feature-store">Step 1: Setting Up the Feature Store</h2>
+<p>First, we’ll create a permanent feature store in Snowflake. This differs from our previous examples which used temporary schemas.</p>
+<section id="required-permissions" class="level3">
+<h3 class="anchored" data-anchor-id="required-permissions">Required Permissions</h3>
+<p>To create a permanent feature store, you need: - <code>CREATE DATABASE</code> if creating a new database - <code>CREATE SCHEMA</code> in the target database - <code>USAGE</code> on the warehouse - <code>CREATE TABLE</code> in the target schema</p>
+</section>
+<section id="why-permanent-vs-temporary" class="level3">
+<h3 class="anchored" data-anchor-id="why-permanent-vs-temporary">Why Permanent vs Temporary?</h3>
+<p>Permanent feature stores offer several advantages: 1. Persistence across sessions 2. Accessibility through Snowsight UI 3. Ability to share with other users/roles 4. Integration with other Snowflake tools</p>
+<div id="cell-5" class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove trailing commas from string assignments</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>database: <span class="bu">str</span> <span class="op">=</span> <span class="st">"DATASCIENCE"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>schema: <span class="bu">str</span> <span class="op">=</span> <span class="st">"FEATURE_STORE_DEMO"</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>warehouse: <span class="bu">str</span> <span class="op">=</span> <span class="st">"DS_XS_WH"</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>conn <span class="op">=</span> get_connection()</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Create database and schema</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>conn.session.sql(<span class="ss">f"CREATE DATABASE IF NOT EXISTS </span><span class="sc">{</span>database<span class="sc">}</span><span class="ss">"</span>).collect()</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>conn.session.sql(<span class="ss">f"CREATE SCHEMA IF NOT EXISTS </span><span class="sc">{</span>database<span class="sc">}</span><span class="ss">.</span><span class="sc">{</span>schema<span class="sc">}</span><span class="ss">"</span>).collect()</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Created and using </span><span class="sc">{</span>database<span class="sc">}</span><span class="ss">.</span><span class="sc">{</span>schema<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:31:53,306 - snowflake_feature_store - INFO - No active session found, creating new connection from environment
+2025-02-17 20:31:54,142 - snowflake_feature_store - INFO - Initialized connection to "DATASCIENCE"."FEATURE_STORE_DEMO"
+2025-02-17 20:31:54,559 - snowflake_feature_store - INFO - Created and using DATASCIENCE.FEATURE_STORE_DEMO</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="step-2-data-generation-and-loading" class="level2">
+<h2 class="anchored" data-anchor-id="step-2-data-generation-and-loading">Step 2: Data Generation and Loading</h2>
+<p>In this section, we’ll create example customer data. In a real scenario, you’d load your own data, but this example shows: 1. Proper data typing for Snowflake 2. Handling temporal data correctly 3. Setting up data quality checks 4. Creating realistic patterns in the data</p>
+<section id="why-this-structure" class="level3">
+<h3 class="anchored" data-anchor-id="why-this-structure">Why This Structure?</h3>
+<p>This structure demonstrates common ML feature engineering challenges: 1. <strong>Time-based Features</strong>: Rolling averages, time windows 2. <strong>Missing Data</strong>: Handling sparse observations 3. <strong>Multiple Metrics</strong>: Combining different data types 4. <strong>Entity Resolution</strong>: Linking data to customers</p>
+</section>
+<section id="why-ltv-prediction" class="level3">
+<h3 class="anchored" data-anchor-id="why-ltv-prediction">Why LTV Prediction?</h3>
+<p>LTV prediction is a common ML use case that demonstrates key feature store benefits: 1. <strong>Time-based Features</strong>: Customer spending patterns over time 2. <strong>Multiple Data Sources</strong>: Combining transactions, web analytics, and customer data 3. <strong>Feature Freshness</strong>: Regular updates as new transactions occur 4. <strong>Point-in-Time Correctness</strong>: Avoiding data leakage in training</p>
+</section>
+<section id="data-structure" class="level3">
+<h3 class="anchored" data-anchor-id="data-structure">Data Structure</h3>
+<p>Our LTV example includes: - <code>LIFE_TIME_VALUE</code>: Current customer value (target) - <code>SESSION_LENGTH</code>: Customer engagement metric - <code>TRANSACTIONS</code>: Number of transactions - <code>TIME_ON_APP/WEBSITE</code>: Engagement channels</p>
+<div id="cell-7" class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get start date</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>num_customers <span class="op">=</span>  <span class="dv">100</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate data with patterns</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> get_example_data(</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    conn.session,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    schema,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    num_customers,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Show data profile</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="st">"</span><span class="ch">\n</span><span class="st">Data Profile:"</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> col <span class="kw">in</span> df.columns:</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    null_count <span class="op">=</span> df.<span class="bu">filter</span>(F.col(col).is_null()).count()</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    null_pct <span class="op">=</span> null_count <span class="op">/</span> df.count() <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"</span><span class="sc">{</span>col<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>null_pct<span class="sc">:.1f}</span><span class="ss">% null"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:31:58,160 - snowflake_feature_store - INFO - Generated 2400 rows of demo data in "DATASCIENCE".FEATURE_STORE_DEMO.CUSTOMER_ACTIVITY
+2025-02-17 20:31:58,162 - snowflake_feature_store - INFO - 
+Sample Data:
+----------------------------------------------------------------------------------------------------------------------------------
+|"CUSTOMER_ID"  |"DATE"      |"LIFE_TIME_VALUE"   |"SESSION_LENGTH"    |"TIME_ON_APP"      |"TIME_ON_WEBSITE"   |"TRANSACTIONS"  |
+----------------------------------------------------------------------------------------------------------------------------------
+|C0             |2025-01-18  |411.9831046823803   |6.101285704798359   |9.912268452627666  |7.269712691809914   |4               |
+|C93            |2025-02-16  |587.2728207366863   |7.409478170285487   |9.255783785633916  |10.025373746735333  |5               |
+|C22            |2025-02-16  |266.1622473753326   |7.3149273852223144  |4.897446257228738  |9.4240638710075     |2               |
+|C51            |2025-02-16  |222.37101022575163  |5.636574120338889   |8.347517400939065  |9.196765681205283   |2               |
+|C36            |2025-02-16  |144.72168907455833  |NULL                |6.852434333584844  |7.780060192861447   |1               |
+----------------------------------------------------------------------------------------------------------------------------------
+
+2025-02-17 20:31:58,919 - snowflake_feature_store - INFO - 
+Schema:
+2025-02-17 20:31:59,131 - snowflake_feature_store - INFO - CUSTOMER_ID: StringType()
+2025-02-17 20:31:59,131 - snowflake_feature_store - INFO - DATE: DateType()
+2025-02-17 20:31:59,132 - snowflake_feature_store - INFO - LIFE_TIME_VALUE: DoubleType()
+2025-02-17 20:31:59,133 - snowflake_feature_store - INFO - SESSION_LENGTH: DoubleType()
+2025-02-17 20:31:59,133 - snowflake_feature_store - INFO - TIME_ON_APP: DoubleType()
+2025-02-17 20:31:59,134 - snowflake_feature_store - INFO - TIME_ON_WEBSITE: DoubleType()
+2025-02-17 20:31:59,135 - snowflake_feature_store - INFO - TRANSACTIONS: LongType()
+2025-02-17 20:31:59,135 - snowflake_feature_store - INFO - 
+Data Profile:
+2025-02-17 20:31:59,902 - snowflake_feature_store - INFO - CUSTOMER_ID: 0.0% null
+2025-02-17 20:32:00,364 - snowflake_feature_store - INFO - DATE: 0.0% null
+2025-02-17 20:32:01,008 - snowflake_feature_store - INFO - LIFE_TIME_VALUE: 0.0% null
+2025-02-17 20:32:01,419 - snowflake_feature_store - INFO - SESSION_LENGTH: 18.8% null
+2025-02-17 20:32:01,811 - snowflake_feature_store - INFO - TIME_ON_APP: 0.0% null
+2025-02-17 20:32:02,172 - snowflake_feature_store - INFO - TIME_ON_WEBSITE: 0.0% null
+2025-02-17 20:32:02,704 - snowflake_feature_store - INFO - TRANSACTIONS: 0.0% null</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="step-3-entity-creation" class="level2">
+<h2 class="anchored" data-anchor-id="step-3-entity-creation">Step 3: Entity Creation</h2>
+<p>Entities are the foundation of your feature store. They represent the objects you’re collecting features about (e.g., customers, products, transactions).</p>
+<section id="why-entities-matter" class="level3">
+<h3 class="anchored" data-anchor-id="why-entities-matter">Why Entities Matter</h3>
+<p>Proper entity design is crucial because: 1. Entities determine how features can be joined 2. Entities define the granularity of your features 3. Entities enable point-in-time correct feature retrieval 4. Entities help organize and discover features</p>
+</section>
+<section id="entity-best-practices" class="level3">
+<h3 class="anchored" data-anchor-id="entity-best-practices">Entity Best Practices</h3>
+<ol type="1">
+<li><strong>Unique Keys</strong>: Choose stable, unique identifiers</li>
+<li><strong>Granularity</strong>: Pick the right level (e.g., customer vs.&nbsp;session)</li>
+<li><strong>Documentation</strong>: Clearly describe what the entity represents</li>
+<li><strong>Consistency</strong>: Use the same keys across feature views</li>
+</ol>
+</section>
+<section id="entity-design-for-ltv" class="level3">
+<h3 class="anchored" data-anchor-id="entity-design-for-ltv">Entity Design for LTV</h3>
+<p>For LTV prediction, we need a customer entity that: 1. Has a stable identifier 2. Links to all customer interactions 3. Supports time-based feature aggregation</p>
+<p>Key considerations for our customer entity: 1. <strong>Identifier</strong>: Use <code>CUSTOMER_ID</code> as stable key 2. <strong>Temporal Aspect</strong>: Track customer since first transaction 3. <strong>Granularity</strong>: Customer-level for LTV prediction 4. <strong>Documentation</strong>: Clear description for feature discovery</p>
+<div id="cell-9" class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create detailed documentation</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>description <span class="op">=</span> <span class="st">"""</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="st">Customer Entity for LTV Prediction</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="st">This entity represents individual customers and their behavior over time.</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="st">It serves as the primary entity for customer lifetime value prediction.</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="st">Key Information:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="st">- Primary Key: CUSTOMER_ID (stable identifier)</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="st">- Temporal Key: DATE (for point-in-time correct features)</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="st">- Granularity: One record per customer per day</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="st">Usage:</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="st">1. Base entity for customer-level features</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="st">2. Join key for transaction and session data</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="st">3. Temporal alignment for time-based features</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="st">Best Practices:</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="st">- Always join using CUSTOMER_ID</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="st">- Use DATE for point-in-time correctness</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="st">- Aggregate features to customer-day level</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="st">Example:</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="st">```sql</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="st">SELECT CUSTOMER_ID, DATE, COUNT(*) as daily_transactions</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="st">FROM transactions</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="st">GROUP BY CUSTOMER_ID, DATE</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="st">```</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="st">"""</span>.strip()</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tempfile</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>metrics_dir <span class="op">=</span> Path(tempfile.mkdtemp()) <span class="op">/</span> <span class="st">"feature_store_metrics"</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>manager <span class="op">=</span> FeatureStoreManager(</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    connection<span class="op">=</span>conn,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    metrics_path<span class="op">=</span>metrics_dir,</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    overwrite<span class="op">=</span><span class="va">True</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Create entity</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>manager.add_entity(</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"CUSTOMER"</span>,</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    join_keys<span class="op">=</span>[<span class="st">"CUSTOMER_ID"</span>],</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span>description,</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="st">"Created CUSTOMER entity for LTV prediction"</span>)</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify entity creation</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>entity <span class="op">=</span> manager.feature_store.get_entity(<span class="st">"CUSTOMER"</span>)</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="st">"</span><span class="ch">\n</span><span class="st">Entity Details:"</span>)</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Name: </span><span class="sc">{</span>entity<span class="sc">.</span>name<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Join Keys: </span><span class="sc">{</span>entity<span class="sc">.</span>join_keys<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:32:04,320 - snowflake_feature_store - INFO - FeatureStoreManager initialized
+2025-02-17 20:32:04,494 - snowflake_feature_store - INFO - Created entity: CUSTOMER with keys: ['CUSTOMER_ID']
+2025-02-17 20:32:04,496 - snowflake_feature_store - INFO - Created CUSTOMER entity for LTV prediction</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>/Users/jdemlow/miniconda3/envs/feature-store/lib/python3.11/site-packages/snowflake/ml/feature_store/feature_store.py:197: UserWarning: Entity CUSTOMER already exists. Skip registration.
+  return f(self, *args, **kargs)</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:32:05,516 - snowflake_feature_store - INFO - 
+Entity Details:
+2025-02-17 20:32:05,517 - snowflake_feature_store - INFO - Name: CUSTOMER
+2025-02-17 20:32:05,518 - snowflake_feature_store - INFO - Join Keys: ['CUSTOMER_ID']</code></pre>
+</div>
+</div>
+</section>
+<section id="key-points-about-this-implementation" class="level3">
+<h3 class="anchored" data-anchor-id="key-points-about-this-implementation">Key Points About This Implementation</h3>
+<ol type="1">
+<li><strong>Documentation</strong>
+<ul>
+<li>Clear description of entity purpose</li>
+<li>Usage examples included</li>
+<li>Best practices documented</li>
+<li>SQL example provided</li>
+</ul></li>
+<li><strong>Validation</strong>
+<ul>
+<li>Entity creation is verified</li>
+<li>Join keys are explicitly defined</li>
+<li>Logging provides creation confirmation</li>
+<li>Error handling is included</li>
+</ul></li>
+<li><strong>LTV Specific</strong>
+<ul>
+<li>Designed for customer-level predictions</li>
+<li>Supports temporal feature creation</li>
+<li>Enables point-in-time correct joins</li>
+<li>Facilitates customer behavior tracking</li>
+</ul></li>
+</ol>
+</section>
+</section>
+<section id="step-4-feature-configuration" class="level2">
+<h2 class="anchored" data-anchor-id="step-4-feature-configuration">Step 4: Feature Configuration</h2>
+<p>Feature configuration is where we define what features we want to create and how they should behave.</p>
+<section id="feature-configuration-concepts" class="level3">
+<h3 class="anchored" data-anchor-id="feature-configuration-concepts">Feature Configuration Concepts</h3>
+<p>A feature configuration defines: 1. <strong>Validation Rules</strong>: Data quality checks and thresholds 2. <strong>Dependencies</strong>: What other features this feature needs 3. <strong>Metadata</strong>: Description, tags, and ownership 4. <strong>Refresh Settings</strong>: How often to update the feature</p>
+</section>
+<section id="why-configuration-matters" class="level3">
+<h3 class="anchored" data-anchor-id="why-configuration-matters">Why Configuration Matters</h3>
+<p>Good feature configuration ensures: 1. Data quality is maintained 2. Features are well-documented 3. Dependencies are tracked 4. Feature freshness is appropriate</p>
+</section>
+<section id="ltv-feature-configuration" class="level3">
+<h3 class="anchored" data-anchor-id="ltv-feature-configuration">LTV Feature Configuration</h3>
+<p>For LTV prediction, we need several types of features: 1. <strong>Behavioral Features</strong> - Session metrics - Engagement patterns - Transaction history</p>
+<ol start="2" type="1">
+<li><strong>Temporal Features</strong>
+<ul>
+<li>Time since first purchase</li>
+<li>Weekly/monthly patterns</li>
+<li>Rolling aggregations</li>
+</ul></li>
+<li><strong>Derived Features</strong>
+<ul>
+<li>Average transaction value</li>
+<li>Engagement ratios</li>
+<li>Time-based metrics</li>
+</ul></li>
+</ol>
+<div id="cell-12" class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Base features (from source data)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>feature_configs <span class="op">=</span> {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"LIFE_TIME_VALUE"</span>: FeatureConfig(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"LIFE_TIME_VALUE"</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"Current customer lifetime value"</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>        validation<span class="op">=</span>FeatureValidationConfig(</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>            null_threshold<span class="op">=</span><span class="fl">0.0</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>            range_check<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>            min_value<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"SESSION_LENGTH"</span>: FeatureConfig(</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"SESSION_LENGTH"</span>,</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"Session length in minutes"</span>,</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>        validation<span class="op">=</span>FeatureValidationConfig(</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>            null_threshold<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>            range_check<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>            min_value<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">"TRANSACTIONS"</span>: FeatureConfig(</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"TRANSACTIONS"</span>,</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"Number of transactions"</span>,</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>        validation<span class="op">=</span>FeatureValidationConfig(</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>            null_threshold<span class="op">=</span><span class="fl">0.0</span>,</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>            range_check<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>            min_value<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Time window features (match moving_agg output names)</span></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> window <span class="kw">in</span> [<span class="dv">7</span>, <span class="dv">30</span>]:</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> metric <span class="kw">in</span> [<span class="st">'TRANSACTIONS'</span>, <span class="st">'LIFE_TIME_VALUE'</span>]:</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> agg <span class="kw">in</span> [<span class="st">'SUM'</span>, <span class="st">'AVG'</span>]:</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>            feature_name <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>agg<span class="sc">}</span><span class="ss">_</span><span class="sc">{</span>metric<span class="sc">}</span><span class="ss">_</span><span class="sc">{</span>window<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>            feature_configs[feature_name] <span class="op">=</span> FeatureConfig(</span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>                name<span class="op">=</span>feature_name,</span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>                description<span class="op">=</span><span class="ss">f"</span><span class="sc">{</span>agg<span class="sc">.</span>lower()<span class="sc">}</span><span class="ss"> of </span><span class="sc">{</span>metric<span class="sc">.</span>lower()<span class="sc">}</span><span class="ss"> over </span><span class="sc">{</span>window<span class="sc">}</span><span class="ss"> days"</span>,</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>                validation<span class="op">=</span>FeatureValidationConfig(</span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>                    null_threshold<span class="op">=</span><span class="fl">0.1</span>,</span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>                    range_check<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>                    min_value<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>                ),</span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>                dependencies<span class="op">=</span>[metric]</span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Derived features</span></span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>feature_configs.update({</span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ENGAGEMENT_SCORE"</span>: FeatureConfig(</span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"ENGAGEMENT_SCORE"</span>,</span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"Combined engagement metric"</span>,</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>        validation<span class="op">=</span>FeatureValidationConfig(</span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>            null_threshold<span class="op">=</span><span class="fl">0.1</span>,</span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>            range_check<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>            min_value<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a>        dependencies<span class="op">=</span>[<span class="st">"SESSION_LENGTH"</span>, <span class="st">"TIME_ON_APP"</span>, <span class="st">"TIME_ON_WEBSITE"</span>]</span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a>    <span class="st">"AVG_TRANSACTION_VALUE"</span>: FeatureConfig(</span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="st">"AVG_TRANSACTION_VALUE"</span>,</span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"Average value per transaction"</span>,</span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>        validation<span class="op">=</span>FeatureValidationConfig(</span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>            null_threshold<span class="op">=</span><span class="fl">0.1</span>,</span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>            range_check<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>            min_value<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>        dependencies<span class="op">=</span>[<span class="st">"LIFE_TIME_VALUE"</span>, <span class="st">"TRANSACTIONS"</span>]</span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>feature_configs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<pre><code>{'LIFE_TIME_VALUE': FeatureConfig(name='LIFE_TIME_VALUE', description='Current customer lifetime value', validation=FeatureValidationConfig(null_check=True, null_threshold=0.0, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=[]),
+ 'SESSION_LENGTH': FeatureConfig(name='SESSION_LENGTH', description='Session length in minutes', validation=FeatureValidationConfig(null_check=True, null_threshold=0.2, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=[]),
+ 'TRANSACTIONS': FeatureConfig(name='TRANSACTIONS', description='Number of transactions', validation=FeatureValidationConfig(null_check=True, null_threshold=0.0, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=[]),
+ 'SUM_TRANSACTIONS_7': FeatureConfig(name='SUM_TRANSACTIONS_7', description='sum of transactions over 7 days', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['TRANSACTIONS']),
+ 'AVG_TRANSACTIONS_7': FeatureConfig(name='AVG_TRANSACTIONS_7', description='avg of transactions over 7 days', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['TRANSACTIONS']),
+ 'SUM_LIFE_TIME_VALUE_7': FeatureConfig(name='SUM_LIFE_TIME_VALUE_7', description='sum of life_time_value over 7 days', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['LIFE_TIME_VALUE']),
+ 'AVG_LIFE_TIME_VALUE_7': FeatureConfig(name='AVG_LIFE_TIME_VALUE_7', description='avg of life_time_value over 7 days', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['LIFE_TIME_VALUE']),
+ 'SUM_TRANSACTIONS_30': FeatureConfig(name='SUM_TRANSACTIONS_30', description='sum of transactions over 30 days', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['TRANSACTIONS']),
+ 'AVG_TRANSACTIONS_30': FeatureConfig(name='AVG_TRANSACTIONS_30', description='avg of transactions over 30 days', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['TRANSACTIONS']),
+ 'SUM_LIFE_TIME_VALUE_30': FeatureConfig(name='SUM_LIFE_TIME_VALUE_30', description='sum of life_time_value over 30 days', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['LIFE_TIME_VALUE']),
+ 'AVG_LIFE_TIME_VALUE_30': FeatureConfig(name='AVG_LIFE_TIME_VALUE_30', description='avg of life_time_value over 30 days', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['LIFE_TIME_VALUE']),
+ 'ENGAGEMENT_SCORE': FeatureConfig(name='ENGAGEMENT_SCORE', description='Combined engagement metric', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['SESSION_LENGTH', 'TIME_ON_APP', 'TIME_ON_WEBSITE']),
+ 'AVG_TRANSACTION_VALUE': FeatureConfig(name='AVG_TRANSACTION_VALUE', description='Average value per transaction', validation=FeatureValidationConfig(null_check=True, null_threshold=0.1, range_check=True, min_value=0.0, max_value=None, unique_check=False, unique_threshold=0.9), dependencies=['LIFE_TIME_VALUE', 'TRANSACTIONS'])}</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="step-5-feature-transformations" class="level2">
+<h2 class="anchored" data-anchor-id="step-5-feature-transformations">Step 5: Feature Transformations</h2>
+<p>Feature transformations convert raw data into ML-ready features. This is a critical step in the ML pipeline.</p>
+<section id="why-transformations-matter" class="level3">
+<h3 class="anchored" data-anchor-id="why-transformations-matter">Why Transformations Matter</h3>
+<p>Transformations serve multiple purposes: 1. <strong>Data Quality</strong>: Handle missing values and outliers 2. <strong>Feature Engineering</strong>: Create more predictive features 3. <strong>ML Requirements</strong>: Format data for model consumption 4. <strong>Business Logic</strong>: Encode domain knowledge</p>
+</section>
+<section id="types-of-transformations" class="level3">
+<h3 class="anchored" data-anchor-id="types-of-transformations">Types of Transformations</h3>
+<ol type="1">
+<li><strong>Basic Transformations</strong>
+<ul>
+<li>Missing value imputation</li>
+<li>Type conversion</li>
+<li>Scaling/normalization</li>
+</ul></li>
+<li><strong>Time-Based Transformations</strong>
+<ul>
+<li>Rolling windows</li>
+<li>Time since event</li>
+<li>Seasonal patterns</li>
+</ul></li>
+<li><strong>Business Transformations</strong>
+<ul>
+<li>Derived metrics</li>
+<li>Domain-specific calculations</li>
+<li>Feature combinations</li>
+</ul></li>
+</ol>
+</section>
+<section id="ltv-specific-transformations" class="level3">
+<h3 class="anchored" data-anchor-id="ltv-specific-transformations">LTV-Specific Transformations</h3>
+<p>For LTV prediction, we need several key transformations:</p>
+<div id="cell-14" class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake.snowpark <span class="im">import</span> DataFrame</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Callable</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.transforms <span class="im">import</span> ValidationMixin</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CustomTransform(ValidationMixin):</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Wrapper for custom transformations"""</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>,</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        transform_func: Callable[[DataFrame], DataFrame],</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        config: TransformConfig</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    ):</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>._transform <span class="op">=</span> transform_func</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>._config <span class="op">=</span> config</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> config(<span class="va">self</span>) <span class="op">-&gt;</span> TransformConfig:</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>._config</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__call__</span>(<span class="va">self</span>, df: DataFrame) <span class="op">-&gt;</span> DataFrame:</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>._transform(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-15" class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Default config if none provided</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>transform_config <span class="op">=</span> TransformConfig(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"ltv_transforms"</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    null_threshold<span class="op">=</span><span class="fl">0.1</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    expected_types<span class="op">=</span>[<span class="st">'DECIMAL'</span>, <span class="st">'DOUBLE'</span>, <span class="st">'NUMBER'</span>]</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>transforms <span class="op">=</span> [</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 1. Handle Missing Values</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    fill_na(</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        [<span class="st">'SESSION_LENGTH'</span>, <span class="st">'TIME_ON_APP'</span>, <span class="st">'TIME_ON_WEBSITE'</span>],</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        fill_value<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>TransformConfig(</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"engagement_imputation"</span>,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>            description<span class="op">=</span><span class="st">"Fill missing engagement metrics with 0"</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 2. Time-Based Features</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    moving_agg(</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>        cols<span class="op">=</span>[<span class="st">'TRANSACTIONS'</span>, <span class="st">'LIFE_TIME_VALUE'</span>],</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>        window_sizes<span class="op">=</span>[<span class="dv">7</span>, <span class="dv">30</span>],  <span class="co"># 7 and 30 day windows</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>        agg_funcs<span class="op">=</span>[<span class="st">'SUM'</span>, <span class="st">'AVG'</span>],</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>        partition_by<span class="op">=</span>[<span class="st">'CUSTOMER_ID'</span>],</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>        order_by<span class="op">=</span>[<span class="st">'DATE'</span>],</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>TransformConfig(</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"time_windows"</span>,</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>            description<span class="op">=</span><span class="st">"Rolling window aggregations"</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 3. Engagement Metrics</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    CustomTransform(</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>        transform_func<span class="op">=</span><span class="kw">lambda</span> df: df.with_column(</span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>            <span class="st">'ENGAGEMENT_SCORE'</span>,</span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>            (F.col(<span class="st">'SESSION_LENGTH'</span>) <span class="op">+</span> </span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>                F.col(<span class="st">'TIME_ON_APP'</span>) <span class="op">+</span> </span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>                F.col(<span class="st">'TIME_ON_WEBSITE'</span>)) <span class="op">/</span> <span class="fl">3.0</span></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>TransformConfig(</span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"engagement_score"</span>,</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>            description<span class="op">=</span><span class="st">"Combined engagement metric"</span>,</span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>            expected_types<span class="op">=</span>[<span class="st">'DOUBLE'</span>]</span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>    <span class="co"># 4. Transaction Metrics</span></span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>    CustomTransform(</span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a>        transform_func<span class="op">=</span><span class="kw">lambda</span> df: df.with_column(</span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a>            <span class="st">'AVG_TRANSACTION_VALUE'</span>,</span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>            F.col(<span class="st">'LIFE_TIME_VALUE'</span>) <span class="op">/</span> </span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a>            F.when(F.col(<span class="st">'TRANSACTIONS'</span>) <span class="op">&gt;</span> <span class="dv">0</span>, F.col(<span class="st">'TRANSACTIONS'</span>))</span>
+<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a>            .otherwise(<span class="dv">1</span>)</span>
+<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>        ),</span>
+<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a>        config<span class="op">=</span>TransformConfig(</span>
+<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>            name<span class="op">=</span><span class="st">"avg_transaction_value"</span>,</span>
+<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a>            description<span class="op">=</span><span class="st">"Average value per transaction"</span>,</span>
+<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a>            expected_types<span class="op">=</span>[<span class="st">'DOUBLE'</span>]</span>
+<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="best-practices-for-transformations" class="level3">
+<h3 class="anchored" data-anchor-id="best-practices-for-transformations">Best Practices for Transformations</h3>
+<ol type="1">
+<li><strong>Validation</strong>
+<ul>
+<li>Check input data types</li>
+<li>Validate output ranges</li>
+<li>Monitor null ratios</li>
+</ul></li>
+<li><strong>Performance</strong>
+<ul>
+<li>Use vectorized operations</li>
+<li>Minimize data movement</li>
+<li>Leverage Snowflake optimizations</li>
+</ul></li>
+<li><strong>Documentation</strong>
+<ul>
+<li>Document business logic</li>
+<li>Explain transformation choices</li>
+<li>Track dependencies</li>
+</ul></li>
+</ol>
+</section>
+<section id="example-usage" class="level3">
+<h3 class="anchored" data-anchor-id="example-usage">Example Usage</h3>
+<p>Let’s apply our transformations and examine the results:</p>
+<div id="cell-17" class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.transforms <span class="im">import</span> apply_transforms</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-18" class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply transforms</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>transformed_df <span class="op">=</span> apply_transforms(df, transforms)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(transformed_df.show(<span class="dv">2</span>))</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>show <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> show:</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Show new features</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">New Features Created:"</span>)</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    new_cols <span class="op">=</span> <span class="bu">set</span>(transformed_df.columns) <span class="op">-</span> <span class="bu">set</span>(df.columns)</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> col <span class="kw">in</span> <span class="bu">sorted</span>(new_cols):</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="sc">{</span>col<span class="sc">}</span><span class="ss">:"</span>)</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>        transformed_df.select([</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>            F.<span class="bu">min</span>(col).alias(<span class="st">'min'</span>),</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>            F.<span class="bu">max</span>(col).alias(<span class="st">'max'</span>),</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>            F.avg(col).alias(<span class="st">'mean'</span>)</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>        ]).show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|"CUSTOMER_ID"  |"DATE"      |"LIFE_TIME_VALUE"  |"SESSION_LENGTH"    |"TIME_ON_APP"      |"TIME_ON_WEBSITE"  |"TRANSACTIONS"  |"SUM_TRANSACTIONS_7"  |"AVG_TRANSACTIONS_7"  |"SUM_TRANSACTIONS_30"  |"AVG_TRANSACTIONS_30"  |"SUM_LIFE_TIME_VALUE_7"  |"AVG_LIFE_TIME_VALUE_7"  |"SUM_LIFE_TIME_VALUE_30"  |"AVG_LIFE_TIME_VALUE_30"  |"ENGAGEMENT_SCORE"  |"AVG_TRANSACTION_VALUE"  |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|C17            |2025-01-19  |326.2440288924739  |7.2016989831135705  |8.976656464668245  |9.220516522830426  |3               |3.0                   |3.0                   |3.0                    |3.0                    |326.2440288924739        |326.2440288924739        |326.2440288924739         |326.2440288924739         |8.466290656870747   |108.74800963082464       |
+|C17            |2025-01-21  |54.16033841877866  |0.0                 |6.048969074557204  |6.607916111383904  |1               |4.0                   |2.0                   |4.0                    |2.0                    |380.4043673112526        |190.2021836556263        |380.4043673112526         |190.2021836556263         |4.218961728647035   |54.16033841877866        |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+None</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="step-6-feature-view-creation" class="level2">
+<h2 class="anchored" data-anchor-id="step-6-feature-view-creation">Step 6: Feature View Creation</h2>
+<p>Feature views combine configurations, transformations, and source data into production-ready features.</p>
+<section id="what-is-a-feature-view" class="level3">
+<h3 class="anchored" data-anchor-id="what-is-a-feature-view">What is a Feature View?</h3>
+<p>A feature view is: 1. <strong>Source Data</strong>: Raw data input 2. <strong>Transformations</strong>: Feature engineering logic 3. <strong>Configurations</strong>: Validation and refresh rules 4. <strong>Metadata</strong>: Documentation and lineage</p>
+</section>
+<section id="why-feature-views-matter" class="level3">
+<h3 class="anchored" data-anchor-id="why-feature-views-matter">Why Feature Views Matter</h3>
+<p>Feature views provide: 1. <strong>Reproducibility</strong>: Consistent feature computation 2. <strong>Monitoring</strong>: Track feature health 3. <strong>Discovery</strong>: Make features findable 4. <strong>Governance</strong>: Control access and updates</p>
+</section>
+<section id="ltv-feature-view-design" class="level3">
+<h3 class="anchored" data-anchor-id="ltv-feature-view-design">LTV Feature View Design</h3>
+<p>For LTV prediction, our feature view needs to: 1. Combine engagement and transaction data 2. Apply time-based transformations 3. Maintain point-in-time correctness 4. Enable regular refreshes</p>
+<div id="cell-20" class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Create feature view config</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>entity_name <span class="op">=</span> <span class="st">"CUSTOMER"</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>feature_view_name <span class="op">=</span> <span class="st">"customer_ltv_features"</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Create feature view config</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> FeatureViewConfig(</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span>feature_view_name,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    domain<span class="op">=</span><span class="st">"RETAIL"</span>,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    entity<span class="op">=</span>entity_name,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    feature_type<span class="op">=</span><span class="st">"BEHAVIOR"</span>,</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    refresh<span class="op">=</span>RefreshConfig(</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>        frequency<span class="op">=</span><span class="st">"1 day"</span>,</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>        mode<span class="op">=</span><span class="st">"INCREMENTAL"</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    features<span class="op">=</span>feature_configs,  <span class="co">#  Created Above Pass the dictionary of FeatureConfigs</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span><span class="st">"""</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="st">    Customer LTV prediction features combining:</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="st">    - Transaction history</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="st">    - Engagement metrics</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="st">    - Time-based patterns</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="st">    </span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="st">    Updated daily with incremental processing.</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a><span class="st">    Use for LTV prediction and customer segmentation.</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="st">    """</span>.strip(),</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    timestamp_col<span class="op">=</span><span class="st">"DATE"</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Create transformations</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Created above</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Create and register feature view</span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>feature_view <span class="op">=</span> manager.add_feature_view(</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>    config<span class="op">=</span>config,</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>    df<span class="op">=</span>df, <span class="co"># Original DataFrame above</span></span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>    entity_name<span class="op">=</span>entity_name,</span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>    transforms<span class="op">=</span>transforms,</span>
+<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>    collect_stats<span class="op">=</span><span class="va">True</span>  <span class="co"># Enable monitoring</span></span>
+<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb18-39"><a href="#cb18-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-40"><a href="#cb18-40" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Log feature view details</span></span>
+<span id="cb18-41"><a href="#cb18-41" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Created feature view: </span><span class="sc">{</span>feature_view_name<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb18-42"><a href="#cb18-42" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Features created: </span><span class="sc">{</span><span class="bu">len</span>(feature_configs)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb18-43"><a href="#cb18-43" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Transformations applied: </span><span class="sc">{</span><span class="bu">len</span>(transforms)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb18-44"><a href="#cb18-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-45"><a href="#cb18-45" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Show feature statistics</span></span>
+<span id="cb18-46"><a href="#cb18-46" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="st">"</span><span class="ch">\n</span><span class="st">Feature Statistics:"</span>)</span>
+<span id="cb18-47"><a href="#cb18-47" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> feature_name, stats <span class="kw">in</span> manager.feature_stats[config.name].items():</span>
+<span id="cb18-48"><a href="#cb18-48" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"</span><span class="ch">\n</span><span class="sc">{</span>feature_name<span class="sc">}</span><span class="ss">:"</span>)</span>
+<span id="cb18-49"><a href="#cb18-49" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="bu">str</span>(stats))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:32:18,914 - snowflake_feature_store - INFO - Validated feature LIFE_TIME_VALUE (stats: {'timestamp': '2025-02-18T04:32:17.726988', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 2400, 'min_value': 1.648862185296137, 'max_value': 749.9894377990938, 'mean_value': 386.7765027344634, 'std_value': 216.32557697363958})
+2025-02-17 20:32:20,275 - snowflake_feature_store - INFO - Validated feature SESSION_LENGTH (stats: {'timestamp': '2025-02-18T04:32:19.402874', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 1950, 'min_value': 0.0, 'max_value': 12.410005497480682, 'mean_value': 5.229708861335616, 'std_value': 3.431862682684851})
+2025-02-17 20:32:21,854 - snowflake_feature_store - INFO - Validated feature TRANSACTIONS (stats: {'timestamp': '2025-02-18T04:32:20.733519', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 7, 'min_value': 1.0, 'max_value': 7.0, 'mean_value': 3.498333, 'std_value': 2.0083186998083744})
+2025-02-17 20:32:23,186 - snowflake_feature_store - INFO - Validated feature SUM_TRANSACTIONS_7 (stats: {'timestamp': '2025-02-18T04:32:22.239931', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 43, 'min_value': 1.0, 'max_value': 43.0, 'mean_value': 21.270416666666666, 'std_value': 7.985906186342453})
+2025-02-17 20:32:24,808 - snowflake_feature_store - INFO - Validated feature AVG_TRANSACTIONS_7 (stats: {'timestamp': '2025-02-18T04:32:23.607263', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 87, 'min_value': 1.0, 'max_value': 7.0, 'mean_value': 3.4522975000000002, 'std_value': 0.9334753459979952})
+2025-02-17 20:32:26,587 - snowflake_feature_store - INFO - Validated feature SUM_LIFE_TIME_VALUE_7 (stats: {'timestamp': '2025-02-18T04:32:25.249776', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 2400, 'min_value': 2.3604486643994282, 'max_value': 4516.837225952391, 'mean_value': 2352.305074179735, 'std_value': 872.6628279170988})
+2025-02-17 20:32:27,983 - snowflake_feature_store - INFO - Validated feature AVG_LIFE_TIME_VALUE_7 (stats: {'timestamp': '2025-02-18T04:32:26.990794', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 2400, 'min_value': 2.3604486643994282, 'max_value': 746.7937644244283, 'mean_value': 381.6178184605153, 'std_value': 100.95620746470256})
+2025-02-17 20:32:29,512 - snowflake_feature_store - INFO - Validated feature SUM_TRANSACTIONS_30 (stats: {'timestamp': '2025-02-18T04:32:28.401970', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 109, 'min_value': 1.0, 'max_value': 112.0, 'mean_value': 43.403333333333336, 'std_value': 25.886947381660594})
+2025-02-17 20:32:31,156 - snowflake_feature_store - INFO - Validated feature AVG_TRANSACTIONS_30 (stats: {'timestamp': '2025-02-18T04:32:29.912207', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 423, 'min_value': 1.0, 'max_value': 7.0, 'mean_value': 3.4125366666666666, 'std_value': 0.81236544639503})
+2025-02-17 20:32:32,760 - snowflake_feature_store - INFO - Validated feature SUM_LIFE_TIME_VALUE_30 (stats: {'timestamp': '2025-02-18T04:32:31.644694', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 2400, 'min_value': 2.3604486643994282, 'max_value': 12245.960289417902, 'mean_value': 4798.932578660564, 'std_value': 2853.5725260633594})
+2025-02-17 20:32:34,479 - snowflake_feature_store - INFO - Validated feature AVG_LIFE_TIME_VALUE_30 (stats: {'timestamp': '2025-02-18T04:32:33.233919', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 2400, 'min_value': 2.3604486643994282, 'max_value': 746.7937644244283, 'mean_value': 377.05517163412384, 'std_value': 88.0311813911325})
+2025-02-17 20:32:36,111 - snowflake_feature_store - INFO - Validated feature ENGAGEMENT_SCORE (stats: {'timestamp': '2025-02-18T04:32:34.962689', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 2400, 'min_value': 1.9506477953781742, 'max_value': 13.661164361145945, 'mean_value': 7.336550503381129, 'std_value': 2.3540242782743106})
+2025-02-17 20:32:37,424 - snowflake_feature_store - INFO - Validated feature AVG_TRANSACTION_VALUE (stats: {'timestamp': '2025-02-18T04:32:36.479206', 'row_count': 2400, 'null_count': 0, 'null_ratio': 0.0, 'unique_count': 2400, 'min_value': 1.648862185296137, 'max_value': 199.701969611493, 'mean_value': 111.05532318882489, 'std_value': 30.834003614918423})
+2025-02-17 20:33:02,353 - snowflake_feature_store - INFO - Created feature view: customer_ltv_features with 17 features
+2025-02-17 20:33:02,361 - snowflake_feature_store - INFO - 
+Created feature view: customer_ltv_features
+2025-02-17 20:33:02,362 - snowflake_feature_store - INFO - Features created: 13
+2025-02-17 20:33:02,363 - snowflake_feature_store - INFO - Transformations applied: 4
+2025-02-17 20:33:02,364 - snowflake_feature_store - INFO - 
+Feature Statistics:
+2025-02-17 20:33:02,364 - snowflake_feature_store - INFO - 
+LIFE_TIME_VALUE:
+2025-02-17 20:33:02,365 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:42.768191
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 2400
+Min value: 1.65
+Max value: 749.99
+Mean value: 386.78
+Std dev: 216.33
+2025-02-17 20:33:02,366 - snowflake_feature_store - INFO - 
+SESSION_LENGTH:
+2025-02-17 20:33:02,367 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:44.370874
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 1950
+Min value: 0.00
+Max value: 12.41
+Mean value: 5.23
+Std dev: 3.43
+2025-02-17 20:33:02,367 - snowflake_feature_store - INFO - 
+TRANSACTIONS:
+2025-02-17 20:33:02,368 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:46.029637
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 7
+Min value: 1.00
+Max value: 7.00
+Mean value: 3.50
+Std dev: 2.01
+2025-02-17 20:33:02,368 - snowflake_feature_store - INFO - 
+SUM_TRANSACTIONS_7:
+2025-02-17 20:33:02,369 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:47.343034
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 43
+Min value: 1.00
+Max value: 43.00
+Mean value: 21.27
+Std dev: 7.99
+2025-02-17 20:33:02,369 - snowflake_feature_store - INFO - 
+AVG_TRANSACTIONS_7:
+2025-02-17 20:33:02,370 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:48.767894
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 87
+Min value: 1.00
+Max value: 7.00
+Mean value: 3.45
+Std dev: 0.93
+2025-02-17 20:33:02,370 - snowflake_feature_store - INFO - 
+SUM_LIFE_TIME_VALUE_7:
+2025-02-17 20:33:02,370 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:50.033087
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 2400
+Min value: 2.36
+Max value: 4516.84
+Mean value: 2352.31
+Std dev: 872.66
+2025-02-17 20:33:02,371 - snowflake_feature_store - INFO - 
+AVG_LIFE_TIME_VALUE_7:
+2025-02-17 20:33:02,371 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:51.481722
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 2400
+Min value: 2.36
+Max value: 746.79
+Mean value: 381.62
+Std dev: 100.96
+2025-02-17 20:33:02,372 - snowflake_feature_store - INFO - 
+SUM_TRANSACTIONS_30:
+2025-02-17 20:33:02,372 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:53.239614
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 109
+Min value: 1.00
+Max value: 112.00
+Mean value: 43.40
+Std dev: 25.89
+2025-02-17 20:33:02,374 - snowflake_feature_store - INFO - 
+AVG_TRANSACTIONS_30:
+2025-02-17 20:33:02,374 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:54.650166
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 423
+Min value: 1.00
+Max value: 7.00
+Mean value: 3.41
+Std dev: 0.81
+2025-02-17 20:33:02,374 - snowflake_feature_store - INFO - 
+SUM_LIFE_TIME_VALUE_30:
+2025-02-17 20:33:02,375 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:56.096680
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 2400
+Min value: 2.36
+Max value: 12245.96
+Mean value: 4798.93
+Std dev: 2853.57
+2025-02-17 20:33:02,375 - snowflake_feature_store - INFO - 
+AVG_LIFE_TIME_VALUE_30:
+2025-02-17 20:33:02,376 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:57.618961
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 2400
+Min value: 2.36
+Max value: 746.79
+Mean value: 377.06
+Std dev: 88.03
+2025-02-17 20:33:02,376 - snowflake_feature_store - INFO - 
+ENGAGEMENT_SCORE:
+2025-02-17 20:33:02,376 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:32:59.229869
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 2400
+Min value: 1.95
+Max value: 13.66
+Mean value: 7.34
+Std dev: 2.35
+2025-02-17 20:33:02,377 - snowflake_feature_store - INFO - 
+AVG_TRANSACTION_VALUE:
+2025-02-17 20:33:02,377 - snowflake_feature_store - INFO - Timestamp: 2025-02-18T04:33:01.041293
+Row count: 2400
+Null count: 0 (0.0%)
+Unique values: 2400
+Min value: 1.65
+Max value: 199.70
+Mean value: 111.06
+Std dev: 30.83</code></pre>
+</div>
+</div>
+</section>
+<section id="best-practices-for-feature-views" class="level3">
+<h3 class="anchored" data-anchor-id="best-practices-for-feature-views">Best Practices for Feature Views</h3>
+<ol type="1">
+<li><strong>Documentation</strong>
+<ul>
+<li>Clear descriptions</li>
+<li>Usage examples</li>
+<li>Update frequency</li>
+<li>Dependencies</li>
+</ul></li>
+<li><strong>Monitoring</strong>
+<ul>
+<li>Feature statistics</li>
+<li>Data quality metrics</li>
+<li>Refresh status</li>
+<li>Drift detection</li>
+</ul></li>
+<li><strong>Performance</strong>
+<ul>
+<li>Incremental updates</li>
+<li>Efficient transformations</li>
+<li>Appropriate refresh schedule</li>
+</ul></li>
+<li><strong>Governance</strong>
+<ul>
+<li>Access controls</li>
+<li>Version control</li>
+<li>Audit logging</li>
+<li>Data lineage</li>
+</ul></li>
+</ol>
+</section>
+</section>
+<section id="step-7-feature-monitoring" class="level2">
+<h2 class="anchored" data-anchor-id="step-7-feature-monitoring">Step 7: Feature Monitoring</h2>
+<p>Monitoring is crucial for maintaining feature quality and detecting issues early.</p>
+<section id="why-monitor-features" class="level3">
+<h3 class="anchored" data-anchor-id="why-monitor-features">Why Monitor Features?</h3>
+<p>Feature monitoring helps: 1. <strong>Detect Data Quality Issues</strong>: Missing values, outliers, type mismatches 2. <strong>Track Feature Drift</strong>: Changes in feature distributions 3. <strong>Ensure Freshness</strong>: Verify timely updates 4. <strong>Validate Business Rules</strong>: Check domain-specific constraints</p>
+</section>
+<section id="types-of-monitoring" class="level3">
+<h3 class="anchored" data-anchor-id="types-of-monitoring">Types of Monitoring</h3>
+<ol type="1">
+<li><strong>Data Quality</strong>
+<ul>
+<li>Null ratios</li>
+<li>Type consistency</li>
+<li>Value ranges</li>
+<li>Cardinality</li>
+</ul></li>
+<li><strong>Statistical Monitoring</strong>
+<ul>
+<li>Distribution shifts</li>
+<li>Correlation changes</li>
+<li>Seasonality patterns</li>
+<li>Outlier detection</li>
+</ul></li>
+<li><strong>Operational Monitoring</strong>
+<ul>
+<li>Refresh status</li>
+<li>Computation time</li>
+<li>Resource usage</li>
+<li>Error rates</li>
+</ul></li>
+</ol>
+</section>
+<section id="ltv-specific-monitoring" class="level3">
+<h3 class="anchored" data-anchor-id="ltv-specific-monitoring">LTV-Specific Monitoring</h3>
+<div id="cell-23" class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Union, List, Callable, Optional, Protocol, Dict, Any</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> decimal</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Any</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-24" class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LTVMonitor:</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Monitor for LTV feature quality and drift"""</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>,</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>        manager: FeatureStoreManager,</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>        feature_view_name: <span class="bu">str</span>,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>        metrics_path: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    ):</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.manager <span class="op">=</span> manager</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.feature_view_name <span class="op">=</span> feature_view_name</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.metrics_path <span class="op">=</span> metrics_path</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.baseline_stats <span class="op">=</span> {}</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _convert_decimal(<span class="va">self</span>, obj: Any) <span class="op">-&gt;</span> Any:</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Convert Decimal objects to float for JSON serialization"""</span></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">isinstance</span>(obj, decimal.Decimal):</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="bu">float</span>(obj)</span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> obj</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _process_metrics(<span class="va">self</span>, metrics: Dict) <span class="op">-&gt;</span> Dict:</span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Process metrics dictionary to ensure JSON serializable values"""</span></span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {</span>
+<span id="cb21-24"><a href="#cb21-24" aria-hidden="true" tabindex="-1"></a>            k: {</span>
+<span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a>                <span class="st">'timestamp'</span>: v[<span class="st">'timestamp'</span>],</span>
+<span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a>                <span class="st">'metrics'</span>: {</span>
+<span id="cb21-27"><a href="#cb21-27" aria-hidden="true" tabindex="-1"></a>                    mk: <span class="va">self</span>._convert_decimal(mv)</span>
+<span id="cb21-28"><a href="#cb21-28" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">for</span> mk, mv <span class="kw">in</span> v[<span class="st">'metrics'</span>].items()</span>
+<span id="cb21-29"><a href="#cb21-29" aria-hidden="true" tabindex="-1"></a>                }</span>
+<span id="cb21-30"><a href="#cb21-30" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb21-31"><a href="#cb21-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> k, v <span class="kw">in</span> metrics.items()</span>
+<span id="cb21-32"><a href="#cb21-32" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb21-33"><a href="#cb21-33" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb21-34"><a href="#cb21-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> compute_feature_metrics(</span>
+<span id="cb21-35"><a href="#cb21-35" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>,</span>
+<span id="cb21-36"><a href="#cb21-36" aria-hidden="true" tabindex="-1"></a>        df: DataFrame,</span>
+<span id="cb21-37"><a href="#cb21-37" aria-hidden="true" tabindex="-1"></a>        timestamp: Optional[datetime] <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb21-38"><a href="#cb21-38" aria-hidden="true" tabindex="-1"></a>    ) <span class="op">-&gt;</span> Dict[<span class="bu">str</span>, Dict]:</span>
+<span id="cb21-39"><a href="#cb21-39" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Compute comprehensive feature metrics"""</span></span>
+<span id="cb21-40"><a href="#cb21-40" aria-hidden="true" tabindex="-1"></a>        metrics <span class="op">=</span> {}</span>
+<span id="cb21-41"><a href="#cb21-41" aria-hidden="true" tabindex="-1"></a>        timestamp <span class="op">=</span> timestamp <span class="kw">or</span> datetime.now()</span>
+<span id="cb21-42"><a href="#cb21-42" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb21-43"><a href="#cb21-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> col <span class="kw">in</span> df.columns:</span>
+<span id="cb21-44"><a href="#cb21-44" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Skip identifier columns</span></span>
+<span id="cb21-45"><a href="#cb21-45" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> col <span class="kw">in</span> [<span class="st">'CUSTOMER_ID'</span>, <span class="st">'DATE'</span>]:</span>
+<span id="cb21-46"><a href="#cb21-46" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb21-47"><a href="#cb21-47" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb21-48"><a href="#cb21-48" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Basic stats</span></span>
+<span id="cb21-49"><a href="#cb21-49" aria-hidden="true" tabindex="-1"></a>            stats <span class="op">=</span> df.select([</span>
+<span id="cb21-50"><a href="#cb21-50" aria-hidden="true" tabindex="-1"></a>                F.count(col).alias(<span class="st">'count'</span>),</span>
+<span id="cb21-51"><a href="#cb21-51" aria-hidden="true" tabindex="-1"></a>                F.count_distinct(col).alias(<span class="st">'unique'</span>),</span>
+<span id="cb21-52"><a href="#cb21-52" aria-hidden="true" tabindex="-1"></a>                F.<span class="bu">sum</span>(F.when(F.col(col).is_null(), <span class="dv">1</span>).otherwise(<span class="dv">0</span>)).alias(<span class="st">'nulls'</span>)</span>
+<span id="cb21-53"><a href="#cb21-53" aria-hidden="true" tabindex="-1"></a>            ]).collect()[<span class="dv">0</span>].asDict()</span>
+<span id="cb21-54"><a href="#cb21-54" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-55"><a href="#cb21-55" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Convert Decimal to float</span></span>
+<span id="cb21-56"><a href="#cb21-56" aria-hidden="true" tabindex="-1"></a>            stats <span class="op">=</span> {k: <span class="va">self</span>._convert_decimal(v) <span class="cf">for</span> k, v <span class="kw">in</span> stats.items()}</span>
+<span id="cb21-57"><a href="#cb21-57" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-58"><a href="#cb21-58" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Numeric stats for appropriate columns</span></span>
+<span id="cb21-59"><a href="#cb21-59" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> col <span class="kw">in</span> [<span class="st">'LIFE_TIME_VALUE'</span>, <span class="st">'SESSION_LENGTH'</span>, <span class="st">'TRANSACTIONS'</span>]:</span>
+<span id="cb21-60"><a href="#cb21-60" aria-hidden="true" tabindex="-1"></a>                numeric_stats <span class="op">=</span> df.select([</span>
+<span id="cb21-61"><a href="#cb21-61" aria-hidden="true" tabindex="-1"></a>                    F.<span class="bu">min</span>(col).alias(<span class="st">'min'</span>),</span>
+<span id="cb21-62"><a href="#cb21-62" aria-hidden="true" tabindex="-1"></a>                    F.<span class="bu">max</span>(col).alias(<span class="st">'max'</span>),</span>
+<span id="cb21-63"><a href="#cb21-63" aria-hidden="true" tabindex="-1"></a>                    F.avg(col).alias(<span class="st">'mean'</span>),</span>
+<span id="cb21-64"><a href="#cb21-64" aria-hidden="true" tabindex="-1"></a>                    F.stddev(col).alias(<span class="st">'std'</span>)</span>
+<span id="cb21-65"><a href="#cb21-65" aria-hidden="true" tabindex="-1"></a>                ]).collect()[<span class="dv">0</span>].asDict()</span>
+<span id="cb21-66"><a href="#cb21-66" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb21-67"><a href="#cb21-67" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Convert Decimal to float</span></span>
+<span id="cb21-68"><a href="#cb21-68" aria-hidden="true" tabindex="-1"></a>                numeric_stats <span class="op">=</span> {k: <span class="va">self</span>._convert_decimal(v) <span class="cf">for</span> k, v <span class="kw">in</span> numeric_stats.items()}</span>
+<span id="cb21-69"><a href="#cb21-69" aria-hidden="true" tabindex="-1"></a>                stats.update(numeric_stats)</span>
+<span id="cb21-70"><a href="#cb21-70" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-71"><a href="#cb21-71" aria-hidden="true" tabindex="-1"></a>            metrics[col] <span class="op">=</span> {</span>
+<span id="cb21-72"><a href="#cb21-72" aria-hidden="true" tabindex="-1"></a>                <span class="st">'timestamp'</span>: timestamp.isoformat(),</span>
+<span id="cb21-73"><a href="#cb21-73" aria-hidden="true" tabindex="-1"></a>                <span class="st">'metrics'</span>: stats</span>
+<span id="cb21-74"><a href="#cb21-74" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb21-75"><a href="#cb21-75" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-76"><a href="#cb21-76" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> metrics</span>
+<span id="cb21-77"><a href="#cb21-77" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb21-78"><a href="#cb21-78" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> set_baseline(<span class="va">self</span>, df: DataFrame) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb21-79"><a href="#cb21-79" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Set baseline statistics for drift detection"""</span></span>
+<span id="cb21-80"><a href="#cb21-80" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.baseline_stats <span class="op">=</span> <span class="va">self</span>.compute_feature_metrics(df)</span>
+<span id="cb21-81"><a href="#cb21-81" aria-hidden="true" tabindex="-1"></a>        logger.info(<span class="st">"Set baseline statistics"</span>)</span>
+<span id="cb21-82"><a href="#cb21-82" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb21-83"><a href="#cb21-83" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Save baseline if metrics path provided</span></span>
+<span id="cb21-84"><a href="#cb21-84" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="va">self</span>.metrics_path:</span>
+<span id="cb21-85"><a href="#cb21-85" aria-hidden="true" tabindex="-1"></a>            baseline_file <span class="op">=</span> Path(<span class="va">self</span>.metrics_path) <span class="op">/</span> <span class="st">"baseline_stats.json"</span></span>
+<span id="cb21-86"><a href="#cb21-86" aria-hidden="true" tabindex="-1"></a>            processed_stats <span class="op">=</span> <span class="va">self</span>._process_metrics(<span class="va">self</span>.baseline_stats)</span>
+<span id="cb21-87"><a href="#cb21-87" aria-hidden="true" tabindex="-1"></a>            <span class="cf">with</span> <span class="bu">open</span>(baseline_file, <span class="st">'w'</span>) <span class="im">as</span> f:</span>
+<span id="cb21-88"><a href="#cb21-88" aria-hidden="true" tabindex="-1"></a>                json.dump(processed_stats, f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb21-89"><a href="#cb21-89" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb21-90"><a href="#cb21-90" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> check_feature_health(</span>
+<span id="cb21-91"><a href="#cb21-91" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>,</span>
+<span id="cb21-92"><a href="#cb21-92" aria-hidden="true" tabindex="-1"></a>        df: DataFrame,</span>
+<span id="cb21-93"><a href="#cb21-93" aria-hidden="true" tabindex="-1"></a>        drift_threshold: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.1</span></span>
+<span id="cb21-94"><a href="#cb21-94" aria-hidden="true" tabindex="-1"></a>    ) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb21-95"><a href="#cb21-95" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Check overall feature health"""</span></span>
+<span id="cb21-96"><a href="#cb21-96" aria-hidden="true" tabindex="-1"></a>        <span class="cf">try</span>:</span>
+<span id="cb21-97"><a href="#cb21-97" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Compute current metrics</span></span>
+<span id="cb21-98"><a href="#cb21-98" aria-hidden="true" tabindex="-1"></a>            current_metrics <span class="op">=</span> <span class="va">self</span>.compute_feature_metrics(df)</span>
+<span id="cb21-99"><a href="#cb21-99" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-100"><a href="#cb21-100" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Detect drift if baseline exists</span></span>
+<span id="cb21-101"><a href="#cb21-101" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="va">self</span>.baseline_stats:</span>
+<span id="cb21-102"><a href="#cb21-102" aria-hidden="true" tabindex="-1"></a>                drift_alerts <span class="op">=</span> <span class="va">self</span>.detect_drift(</span>
+<span id="cb21-103"><a href="#cb21-103" aria-hidden="true" tabindex="-1"></a>                    current_metrics,</span>
+<span id="cb21-104"><a href="#cb21-104" aria-hidden="true" tabindex="-1"></a>                    drift_threshold</span>
+<span id="cb21-105"><a href="#cb21-105" aria-hidden="true" tabindex="-1"></a>                )</span>
+<span id="cb21-106"><a href="#cb21-106" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb21-107"><a href="#cb21-107" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> drift_alerts:</span>
+<span id="cb21-108"><a href="#cb21-108" aria-hidden="true" tabindex="-1"></a>                    logger.warning(<span class="st">"</span><span class="ch">\n</span><span class="st">Feature Drift Detected:"</span>)</span>
+<span id="cb21-109"><a href="#cb21-109" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">for</span> feature, alerts <span class="kw">in</span> drift_alerts.items():</span>
+<span id="cb21-110"><a href="#cb21-110" aria-hidden="true" tabindex="-1"></a>                        logger.warning(<span class="ss">f"</span><span class="ch">\n</span><span class="sc">{</span>feature<span class="sc">}</span><span class="ss">:"</span>)</span>
+<span id="cb21-111"><a href="#cb21-111" aria-hidden="true" tabindex="-1"></a>                        <span class="cf">for</span> alert <span class="kw">in</span> alerts:</span>
+<span id="cb21-112"><a href="#cb21-112" aria-hidden="true" tabindex="-1"></a>                            logger.warning(<span class="ss">f"- </span><span class="sc">{</span>alert<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb21-113"><a href="#cb21-113" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-114"><a href="#cb21-114" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Log current metrics</span></span>
+<span id="cb21-115"><a href="#cb21-115" aria-hidden="true" tabindex="-1"></a>            logger.info(<span class="st">"</span><span class="ch">\n</span><span class="st">Current Feature Metrics:"</span>)</span>
+<span id="cb21-116"><a href="#cb21-116" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> feature, metrics <span class="kw">in</span> current_metrics.items():</span>
+<span id="cb21-117"><a href="#cb21-117" aria-hidden="true" tabindex="-1"></a>                logger.info(<span class="ss">f"</span><span class="ch">\n</span><span class="sc">{</span>feature<span class="sc">}</span><span class="ss">:"</span>)</span>
+<span id="cb21-118"><a href="#cb21-118" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> metric, value <span class="kw">in</span> metrics[<span class="st">'metrics'</span>].items():</span>
+<span id="cb21-119"><a href="#cb21-119" aria-hidden="true" tabindex="-1"></a>                    logger.info(<span class="ss">f"  </span><span class="sc">{</span>metric<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>value<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb21-120"><a href="#cb21-120" aria-hidden="true" tabindex="-1"></a>                    </span>
+<span id="cb21-121"><a href="#cb21-121" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Save metrics if path provided</span></span>
+<span id="cb21-122"><a href="#cb21-122" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="va">self</span>.metrics_path:</span>
+<span id="cb21-123"><a href="#cb21-123" aria-hidden="true" tabindex="-1"></a>                metrics_file <span class="op">=</span> Path(<span class="va">self</span>.metrics_path) <span class="op">/</span> <span class="ss">f"metrics_</span><span class="sc">{</span>datetime<span class="sc">.</span>now()<span class="sc">.</span>strftime(<span class="st">'%Y%m</span><span class="sc">%d</span><span class="st">_%H%M%S'</span>)<span class="sc">}</span><span class="ss">.json"</span></span>
+<span id="cb21-124"><a href="#cb21-124" aria-hidden="true" tabindex="-1"></a>                processed_metrics <span class="op">=</span> <span class="va">self</span>._process_metrics(current_metrics)</span>
+<span id="cb21-125"><a href="#cb21-125" aria-hidden="true" tabindex="-1"></a>                <span class="cf">with</span> <span class="bu">open</span>(metrics_file, <span class="st">'w'</span>) <span class="im">as</span> f:</span>
+<span id="cb21-126"><a href="#cb21-126" aria-hidden="true" tabindex="-1"></a>                    json.dump(processed_metrics, f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb21-127"><a href="#cb21-127" aria-hidden="true" tabindex="-1"></a>                    </span>
+<span id="cb21-128"><a href="#cb21-128" aria-hidden="true" tabindex="-1"></a>        <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="cb21-129"><a href="#cb21-129" aria-hidden="true" tabindex="-1"></a>            logger.error(<span class="ss">f"Error checking feature health: </span><span class="sc">{</span><span class="bu">str</span>(e)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb21-130"><a href="#cb21-130" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span></span>
+<span id="cb21-131"><a href="#cb21-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-132"><a href="#cb21-132" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> detect_drift(</span>
+<span id="cb21-133"><a href="#cb21-133" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>,</span>
+<span id="cb21-134"><a href="#cb21-134" aria-hidden="true" tabindex="-1"></a>        current_metrics: Dict,</span>
+<span id="cb21-135"><a href="#cb21-135" aria-hidden="true" tabindex="-1"></a>        drift_threshold: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.1</span></span>
+<span id="cb21-136"><a href="#cb21-136" aria-hidden="true" tabindex="-1"></a>    ) <span class="op">-&gt;</span> Dict[<span class="bu">str</span>, List[<span class="bu">str</span>]]:</span>
+<span id="cb21-137"><a href="#cb21-137" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Detect significant changes in feature distributions"""</span></span>
+<span id="cb21-138"><a href="#cb21-138" aria-hidden="true" tabindex="-1"></a>        drift_alerts <span class="op">=</span> {}</span>
+<span id="cb21-139"><a href="#cb21-139" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb21-140"><a href="#cb21-140" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> feature, metrics <span class="kw">in</span> current_metrics.items():</span>
+<span id="cb21-141"><a href="#cb21-141" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> feature <span class="kw">not</span> <span class="kw">in</span> <span class="va">self</span>.baseline_stats:</span>
+<span id="cb21-142"><a href="#cb21-142" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb21-143"><a href="#cb21-143" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb21-144"><a href="#cb21-144" aria-hidden="true" tabindex="-1"></a>            alerts <span class="op">=</span> []</span>
+<span id="cb21-145"><a href="#cb21-145" aria-hidden="true" tabindex="-1"></a>            baseline <span class="op">=</span> <span class="va">self</span>.baseline_stats[feature][<span class="st">'metrics'</span>]</span>
+<span id="cb21-146"><a href="#cb21-146" aria-hidden="true" tabindex="-1"></a>            current <span class="op">=</span> metrics[<span class="st">'metrics'</span>]</span>
+<span id="cb21-147"><a href="#cb21-147" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-148"><a href="#cb21-148" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Check for distribution changes</span></span>
+<span id="cb21-149"><a href="#cb21-149" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> metric <span class="kw">in</span> [<span class="st">'mean'</span>, <span class="st">'std'</span>]:</span>
+<span id="cb21-150"><a href="#cb21-150" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> metric <span class="kw">not</span> <span class="kw">in</span> current <span class="kw">or</span> metric <span class="kw">not</span> <span class="kw">in</span> baseline:</span>
+<span id="cb21-151"><a href="#cb21-151" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">continue</span></span>
+<span id="cb21-152"><a href="#cb21-152" aria-hidden="true" tabindex="-1"></a>                    </span>
+<span id="cb21-153"><a href="#cb21-153" aria-hidden="true" tabindex="-1"></a>                change <span class="op">=</span> <span class="bu">abs</span>(current[metric] <span class="op">-</span> baseline[metric]) <span class="op">/</span> baseline[metric]</span>
+<span id="cb21-154"><a href="#cb21-154" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> change <span class="op">&gt;</span> drift_threshold:</span>
+<span id="cb21-155"><a href="#cb21-155" aria-hidden="true" tabindex="-1"></a>                    alerts.append(</span>
+<span id="cb21-156"><a href="#cb21-156" aria-hidden="true" tabindex="-1"></a>                        <span class="ss">f"</span><span class="sc">{</span>metric<span class="sc">.</span>upper()<span class="sc">}</span><span class="ss"> changed by </span><span class="sc">{</span>change<span class="sc">:.1%}</span><span class="ss">"</span></span>
+<span id="cb21-157"><a href="#cb21-157" aria-hidden="true" tabindex="-1"></a>                    )</span>
+<span id="cb21-158"><a href="#cb21-158" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-159"><a href="#cb21-159" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Check for data quality changes</span></span>
+<span id="cb21-160"><a href="#cb21-160" aria-hidden="true" tabindex="-1"></a>            null_ratio <span class="op">=</span> current[<span class="st">'NULLS'</span>] <span class="op">/</span> current[<span class="st">'COUNT'</span>]</span>
+<span id="cb21-161"><a href="#cb21-161" aria-hidden="true" tabindex="-1"></a>            baseline_null_ratio <span class="op">=</span> baseline[<span class="st">'NULLS'</span>] <span class="op">/</span> baseline[<span class="st">'COUNT'</span>]</span>
+<span id="cb21-162"><a href="#cb21-162" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="bu">abs</span>(null_ratio <span class="op">-</span> baseline_null_ratio) <span class="op">&gt;</span> drift_threshold:</span>
+<span id="cb21-163"><a href="#cb21-163" aria-hidden="true" tabindex="-1"></a>                alerts.append(</span>
+<span id="cb21-164"><a href="#cb21-164" aria-hidden="true" tabindex="-1"></a>                    <span class="ss">f"NULL ratio changed from </span><span class="sc">{</span>baseline_null_ratio<span class="sc">:.1%}</span><span class="ss"> to </span><span class="sc">{</span>null_ratio<span class="sc">:.1%}</span><span class="ss">"</span></span>
+<span id="cb21-165"><a href="#cb21-165" aria-hidden="true" tabindex="-1"></a>                )</span>
+<span id="cb21-166"><a href="#cb21-166" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb21-167"><a href="#cb21-167" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> alerts:</span>
+<span id="cb21-168"><a href="#cb21-168" aria-hidden="true" tabindex="-1"></a>                drift_alerts[feature] <span class="op">=</span> alerts</span>
+<span id="cb21-169"><a href="#cb21-169" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb21-170"><a href="#cb21-170" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> drift_alerts</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="example-usage-1" class="level3">
+<h3 class="anchored" data-anchor-id="example-usage-1">Example Usage</h3>
+<p>Let’s set up monitoring for our LTV features:</p>
+<div id="cell-26" class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up metrics directory</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>metrics_dir <span class="op">=</span> Path(<span class="st">"feature_metrics"</span>)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>metrics_dir.mkdir(exist_ok<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-27" class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up monitoring</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>monitor <span class="op">=</span> LTVMonitor(</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    manager<span class="op">=</span>manager,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    feature_view_name<span class="op">=</span>feature_view.name,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    metrics_path<span class="op">=</span><span class="bu">str</span>(metrics_dir)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-28" class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> snowflake_feature_store.examples <span class="im">import</span> get_example_data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-29" class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set baseline</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>monitor.set_baseline(feature_view.feature_df)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate some drift</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>drift_df <span class="op">=</span> get_example_data(</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    conn.session,</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    schema,</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    num_customers<span class="op">=</span><span class="dv">250</span>,</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    ltv_multiplier<span class="op">=</span><span class="fl">4.5</span>,  <span class="co"># Increase values to simulate drift</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    table_type <span class="op">=</span> <span class="st">'TEST'</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for drift</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>monitor.check_feature_health(drift_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:33:07,458 - snowflake_feature_store - INFO - Set baseline statistics
+2025-02-17 20:33:13,744 - snowflake_feature_store - INFO - Generated 6000 rows of demo data in "DATASCIENCE".FEATURE_STORE_DEMO.CUSTOMER_ACTIVITY_TEST
+2025-02-17 20:33:13,747 - snowflake_feature_store - INFO - 
+Sample Data:
+----------------------------------------------------------------------------------------------------------------------------------
+|"CUSTOMER_ID"  |"DATE"      |"LIFE_TIME_VALUE"   |"SESSION_LENGTH"    |"TIME_ON_APP"      |"TIME_ON_WEBSITE"   |"TRANSACTIONS"  |
+----------------------------------------------------------------------------------------------------------------------------------
+|C0             |2025-01-18  |411.9831046823803   |6.101285704798359   |9.912268452627666  |7.269712691809914   |4               |
+|C93            |2025-02-16  |587.2728207366863   |7.409478170285487   |9.255783785633916  |10.025373746735333  |5               |
+|C22            |2025-02-16  |266.1622473753326   |7.3149273852223144  |4.897446257228738  |9.4240638710075     |2               |
+|C51            |2025-02-16  |222.37101022575163  |5.636574120338889   |8.347517400939065  |9.196765681205283   |2               |
+|C36            |2025-02-16  |144.72168907455833  |NULL                |6.852434333584844  |7.780060192861447   |1               |
+----------------------------------------------------------------------------------------------------------------------------------
+
+2025-02-17 20:33:14,488 - snowflake_feature_store - INFO - 
+Schema:
+2025-02-17 20:33:14,727 - snowflake_feature_store - INFO - CUSTOMER_ID: StringType()
+2025-02-17 20:33:14,729 - snowflake_feature_store - INFO - DATE: DateType()
+2025-02-17 20:33:14,729 - snowflake_feature_store - INFO - LIFE_TIME_VALUE: DoubleType()
+2025-02-17 20:33:14,730 - snowflake_feature_store - INFO - SESSION_LENGTH: DoubleType()
+2025-02-17 20:33:14,731 - snowflake_feature_store - INFO - TIME_ON_APP: DoubleType()
+2025-02-17 20:33:14,732 - snowflake_feature_store - INFO - TIME_ON_WEBSITE: DoubleType()
+2025-02-17 20:33:14,732 - snowflake_feature_store - INFO - TRANSACTIONS: LongType()
+2025-02-17 20:33:16,913 - snowflake_feature_store - WARNING - 
+Feature Drift Detected:
+2025-02-17 20:33:16,914 - snowflake_feature_store - WARNING - 
+SESSION_LENGTH:
+2025-02-17 20:33:16,915 - snowflake_feature_store - WARNING - - NULL ratio changed from 0.0% to 23.1%
+2025-02-17 20:33:16,916 - snowflake_feature_store - INFO - 
+Current Feature Metrics:
+2025-02-17 20:33:16,917 - snowflake_feature_store - INFO - 
+LIFE_TIME_VALUE:
+2025-02-17 20:33:16,918 - snowflake_feature_store - INFO -   COUNT: 2400
+2025-02-17 20:33:16,918 - snowflake_feature_store - INFO -   UNIQUE: 2400
+2025-02-17 20:33:16,919 - snowflake_feature_store - INFO -   NULLS: 0
+2025-02-17 20:33:16,919 - snowflake_feature_store - INFO -   MIN: 1.648862185296137
+2025-02-17 20:33:16,920 - snowflake_feature_store - INFO -   MAX: 749.9894377990938
+2025-02-17 20:33:16,920 - snowflake_feature_store - INFO -   MEAN: 386.7765027344634
+2025-02-17 20:33:16,921 - snowflake_feature_store - INFO -   STD: 216.32557697363958
+2025-02-17 20:33:16,922 - snowflake_feature_store - INFO - 
+SESSION_LENGTH:
+2025-02-17 20:33:16,922 - snowflake_feature_store - INFO -   COUNT: 1949
+2025-02-17 20:33:16,923 - snowflake_feature_store - INFO -   UNIQUE: 1949
+2025-02-17 20:33:16,924 - snowflake_feature_store - INFO -   NULLS: 451
+2025-02-17 20:33:16,924 - snowflake_feature_store - INFO -   MIN: 0.2003856043204863
+2025-02-17 20:33:16,925 - snowflake_feature_store - INFO -   MAX: 12.410005497480682
+2025-02-17 20:33:16,925 - snowflake_feature_store - INFO -   MEAN: 6.439867248437905
+2025-02-17 20:33:16,925 - snowflake_feature_store - INFO -   STD: 2.589823251532806
+2025-02-17 20:33:16,926 - snowflake_feature_store - INFO - 
+TIME_ON_APP:
+2025-02-17 20:33:16,926 - snowflake_feature_store - INFO -   COUNT: 2400
+2025-02-17 20:33:16,927 - snowflake_feature_store - INFO -   UNIQUE: 2400
+2025-02-17 20:33:16,927 - snowflake_feature_store - INFO -   NULLS: 0
+2025-02-17 20:33:16,928 - snowflake_feature_store - INFO - 
+TIME_ON_WEBSITE:
+2025-02-17 20:33:16,928 - snowflake_feature_store - INFO -   COUNT: 2400
+2025-02-17 20:33:16,929 - snowflake_feature_store - INFO -   UNIQUE: 2400
+2025-02-17 20:33:16,929 - snowflake_feature_store - INFO -   NULLS: 0
+2025-02-17 20:33:16,930 - snowflake_feature_store - INFO - 
+TRANSACTIONS:
+2025-02-17 20:33:16,930 - snowflake_feature_store - INFO -   COUNT: 2400
+2025-02-17 20:33:16,931 - snowflake_feature_store - INFO -   UNIQUE: 7
+2025-02-17 20:33:16,931 - snowflake_feature_store - INFO -   NULLS: 0
+2025-02-17 20:33:16,932 - snowflake_feature_store - INFO -   MIN: 1
+2025-02-17 20:33:16,932 - snowflake_feature_store - INFO -   MAX: 7
+2025-02-17 20:33:16,933 - snowflake_feature_store - INFO -   MEAN: 3.498333
+2025-02-17 20:33:16,933 - snowflake_feature_store - INFO -   STD: 2.0083186998083744</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="step-8-training-data-generation" class="level2">
+<h2 class="anchored" data-anchor-id="step-8-training-data-generation">Step 8: Training Data Generation</h2>
+<p>Generating training data from a feature store requires special consideration to avoid data leakage and ensure point-in-time correctness.</p>
+<section id="why-training-data-generation-matters" class="level3">
+<h3 class="anchored" data-anchor-id="why-training-data-generation-matters">Why Training Data Generation Matters</h3>
+<p>Proper training data generation: 1. <strong>Prevents Data Leakage</strong>: Ensures future data doesn’t leak into training 2. <strong>Maintains Consistency</strong>: Uses same feature computations as production 3. <strong>Enables Reproducibility</strong>: Training sets can be recreated exactly 4. <strong>Supports Experimentation</strong>: Easy to create different feature combinations</p>
+</section>
+<section id="ltv-training-data-requirements" class="level3">
+<h3 class="anchored" data-anchor-id="ltv-training-data-requirements">LTV Training Data Requirements</h3>
+<p>For LTV prediction, we need to: 1. Use historical data to predict future LTV 2. Include time-based features correctly 3. Handle missing values consistently 4. Maintain customer context</p>
+<div id="cell-31" class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tempfile</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>metrics_dir <span class="op">=</span> Path(tempfile.mkdtemp()) <span class="op">/</span> <span class="st">"feature_store_metrics"</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>training_start_date<span class="op">=</span><span class="st">'2025-01-01'</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>training_end_date<span class="op">=</span><span class="st">'2025-03-01'</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>prediction_window<span class="op">=</span><span class="dv">90</span>  <span class="co"># Predict 90-day LTV</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>save_table<span class="op">=</span><span class="st">'DATASCIENCE.FEATURE_STORE_DEMO.LTV_TRAINING_DATA'</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>manager <span class="op">=</span> FeatureStoreManager(</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>    connection<span class="op">=</span>conn,</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    metrics_path<span class="op">=</span>metrics_dir,</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>    overwrite<span class="op">=</span><span class="va">True</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Get existing feature view</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>feature_view <span class="op">=</span> manager.feature_store.get_feature_view(</span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"customer_ltv_features"</span>,</span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>    version<span class="op">=</span><span class="st">"V1_0"</span>  <span class="co"># Use the version from earlier</span></span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:37:43,451 - snowflake_feature_store - INFO - FeatureStoreManager initialized</code></pre>
+</div>
+</div>
+<div id="cell-32" class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the fully qualified table name</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>table_name <span class="op">=</span> (</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"</span><span class="sc">{</span>manager<span class="sc">.</span>connection<span class="sc">.</span>database<span class="sc">}</span><span class="ss">."</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"</span><span class="sc">{</span>manager<span class="sc">.</span>connection<span class="sc">.</span>schema<span class="sc">}</span><span class="ss">."</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"CUSTOMER_ACTIVITY"</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Create spine query for point-in-time correct features</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>spine_df <span class="op">=</span> manager.connection.session.sql(<span class="ss">f"""</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="ss">    WITH customer_dates AS (</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a><span class="ss">        -- Get all customer-date combinations</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a><span class="ss">    SELECT DISTINCT</span></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a><span class="ss">            CUSTOMER_ID,</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a><span class="ss">            DATE</span></span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a><span class="ss">        FROM </span><span class="sc">{</span>table_name<span class="sc">}</span></span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a><span class="ss">        WHERE DATE BETWEEN '</span><span class="sc">{</span>training_start_date<span class="sc">}</span><span class="ss">' AND '</span><span class="sc">{</span>training_end_date<span class="sc">}</span><span class="ss">'</span></span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a><span class="ss">    ),</span></span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a><span class="ss">    future_ltv AS (</span></span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a><span class="ss">        -- Calculate future LTV for each customer-date</span></span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a><span class="ss">        SELECT </span></span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a><span class="ss">            cd.CUSTOMER_ID,</span></span>
+<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a><span class="ss">            cd.DATE as FEATURE_DATE,</span></span>
+<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a><span class="ss">            MAX(f.DATE) as LABEL_DATE,</span></span>
+<span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a><span class="ss">            MAX(f.LIFE_TIME_VALUE) as FUTURE_LTV</span></span>
+<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a><span class="ss">        FROM customer_dates cd</span></span>
+<span id="cb29-26"><a href="#cb29-26" aria-hidden="true" tabindex="-1"></a><span class="ss">        LEFT JOIN </span><span class="sc">{</span>table_name<span class="sc">}</span><span class="ss"> f</span></span>
+<span id="cb29-27"><a href="#cb29-27" aria-hidden="true" tabindex="-1"></a><span class="ss">            ON cd.CUSTOMER_ID = f.CUSTOMER_ID</span></span>
+<span id="cb29-28"><a href="#cb29-28" aria-hidden="true" tabindex="-1"></a><span class="ss">            AND f.DATE BETWEEN cd.DATE </span></span>
+<span id="cb29-29"><a href="#cb29-29" aria-hidden="true" tabindex="-1"></a><span class="ss">                AND DATEADD(days, </span><span class="sc">{</span>prediction_window<span class="sc">}</span><span class="ss">, cd.DATE)</span></span>
+<span id="cb29-30"><a href="#cb29-30" aria-hidden="true" tabindex="-1"></a><span class="ss">        GROUP BY 1, 2</span></span>
+<span id="cb29-31"><a href="#cb29-31" aria-hidden="true" tabindex="-1"></a><span class="ss">)</span></span>
+<span id="cb29-32"><a href="#cb29-32" aria-hidden="true" tabindex="-1"></a><span class="ss">    -- Final spine query</span></span>
+<span id="cb29-33"><a href="#cb29-33" aria-hidden="true" tabindex="-1"></a><span class="ss">    SELECT </span></span>
+<span id="cb29-34"><a href="#cb29-34" aria-hidden="true" tabindex="-1"></a><span class="ss">        CUSTOMER_ID,</span></span>
+<span id="cb29-35"><a href="#cb29-35" aria-hidden="true" tabindex="-1"></a><span class="ss">        FEATURE_DATE as "DATE",</span></span>
+<span id="cb29-36"><a href="#cb29-36" aria-hidden="true" tabindex="-1"></a><span class="ss">        FUTURE_LTV as "TARGET_LTV",</span></span>
+<span id="cb29-37"><a href="#cb29-37" aria-hidden="true" tabindex="-1"></a><span class="ss">        LABEL_DATE as "LABEL_DATE"</span></span>
+<span id="cb29-38"><a href="#cb29-38" aria-hidden="true" tabindex="-1"></a><span class="ss">    FROM future_ltv</span></span>
+<span id="cb29-39"><a href="#cb29-39" aria-hidden="true" tabindex="-1"></a><span class="ss">"""</span>)</span>
+<span id="cb29-40"><a href="#cb29-40" aria-hidden="true" tabindex="-1"></a>spine_df.show(<span class="dv">2</span>)</span>
+<span id="cb29-41"><a href="#cb29-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-42"><a href="#cb29-42" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Created spine with </span><span class="sc">{</span>spine_df<span class="sc">.</span>count()<span class="sc">}</span><span class="ss"> rows"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>-----------------------------------------------------------------
+|"CUSTOMER_ID"  |"DATE"      |"TARGET_LTV"       |"LABEL_DATE"  |
+-----------------------------------------------------------------
+|C0             |2025-01-18  |744.4746675216771  |2025-02-15    |
+|C93            |2025-02-16  |587.2728207366863  |2025-02-16    |
+-----------------------------------------------------------------
+
+2025-02-17 20:37:46,924 - snowflake_feature_store - INFO - Created spine with 2400 rows</code></pre>
+</div>
+</div>
+<div id="cell-33" class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Get features using point-in-time correct joins</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>training_data <span class="op">=</span> manager.get_features(</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    spine_df<span class="op">=</span>spine_df,</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    feature_views<span class="op">=</span>[feature_view],</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    spine_timestamp_col<span class="op">=</span><span class="st">"DATE"</span>,</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    label_cols<span class="op">=</span>[<span class="st">"TARGET_LTV"</span>, <span class="st">"LABEL_DATE"</span>]</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="st">"</span><span class="ch">\n</span><span class="st">Sample Data:"</span>)</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>training_data.show(<span class="dv">2</span>)</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="st">"</span><span class="ch">\n</span><span class="st">Schema:"</span>)</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> field <span class="kw">in</span> training_data.schema.fields:</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"</span><span class="sc">{</span>field<span class="sc">.</span>name<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>field<span class="sc">.</span>datatype<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:37:47,252 - snowflake_feature_store - INFO - Spine DataFrame columns: ['CUSTOMER_ID', 'DATE', 'TARGET_LTV', 'LABEL_DATE']
+2025-02-17 20:37:47,253 - snowflake_feature_store - INFO - Spine DataFrame schema: StructType([StructField('CUSTOMER_ID', StringType(), nullable=True), StructField('DATE', DateType(), nullable=True), StructField('TARGET_LTV', DoubleType(), nullable=True), StructField('LABEL_DATE', DateType(), nullable=True)])
+2025-02-17 20:37:47,254 - snowflake_feature_store - INFO - Generating dataset with name: DATASET_20250218_043747_95577426
+2025-02-17 20:37:47,255 - snowflake_feature_store - INFO - Label columns: ['"TARGET_LTV"', '"LABEL_DATE"']
+2025-02-17 20:37:47,255 - snowflake_feature_store - INFO - Timestamp column: "DATE"
+2025-02-17 20:37:50,789 - snowflake_feature_store - INFO - 
+Sample Data:
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|"CUSTOMER_ID"  |"DATE"      |"TARGET_LTV"       |"LABEL_DATE"  |"LIFE_TIME_VALUE"   |"SESSION_LENGTH"   |"TIME_ON_APP"       |"TIME_ON_WEBSITE"   |"TRANSACTIONS"  |"SUM_TRANSACTIONS_7"  |"AVG_TRANSACTIONS_7"  |"SUM_TRANSACTIONS_30"  |"AVG_TRANSACTIONS_30"  |"SUM_LIFE_TIME_VALUE_7"  |"AVG_LIFE_TIME_VALUE_7"  |"SUM_LIFE_TIME_VALUE_30"  |"AVG_LIFE_TIME_VALUE_30"  |"ENGAGEMENT_SCORE"  |"AVG_TRANSACTION_VALUE"  |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|C54            |2025-01-18  |662.0580444335938  |2025-02-16    |125.09537506103516  |6.219936847686768  |4.40126371383667    |6.4087395668029785  |1               |1.0                   |1.0                   |1.0                    |1.0                    |125.09537506103516       |125.09537506103516       |125.09537506103516        |125.09537506103516        |5.676646709442139   |125.09537506103516       |
+|C54            |2025-01-19  |662.0580444335938  |2025-02-16    |519.3323974609375   |6.022785186767578  |11.198848724365234  |11.417963981628418  |5               |6.0                   |3.0                   |6.0                    |3.0                    |644.4277954101562        |322.2138977050781        |644.4277954101562         |322.2138977050781         |9.54653263092041    |103.86648559570312       |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+2025-02-17 20:37:52,305 - snowflake_feature_store - INFO - 
+Schema:
+2025-02-17 20:37:52,307 - snowflake_feature_store - INFO - CUSTOMER_ID: StringType()
+2025-02-17 20:37:52,308 - snowflake_feature_store - INFO - DATE: DateType()
+2025-02-17 20:37:52,309 - snowflake_feature_store - INFO - TARGET_LTV: DoubleType()
+2025-02-17 20:37:52,309 - snowflake_feature_store - INFO - LABEL_DATE: DateType()
+2025-02-17 20:37:52,310 - snowflake_feature_store - INFO - LIFE_TIME_VALUE: DoubleType()
+2025-02-17 20:37:52,311 - snowflake_feature_store - INFO - SESSION_LENGTH: DoubleType()
+2025-02-17 20:37:52,311 - snowflake_feature_store - INFO - TIME_ON_APP: DoubleType()
+2025-02-17 20:37:52,312 - snowflake_feature_store - INFO - TIME_ON_WEBSITE: DoubleType()
+2025-02-17 20:37:52,313 - snowflake_feature_store - INFO - TRANSACTIONS: LongType()
+2025-02-17 20:37:52,314 - snowflake_feature_store - INFO - SUM_TRANSACTIONS_7: DoubleType()
+2025-02-17 20:37:52,315 - snowflake_feature_store - INFO - AVG_TRANSACTIONS_7: DoubleType()
+2025-02-17 20:37:52,316 - snowflake_feature_store - INFO - SUM_TRANSACTIONS_30: DoubleType()
+2025-02-17 20:37:52,316 - snowflake_feature_store - INFO - AVG_TRANSACTIONS_30: DoubleType()
+2025-02-17 20:37:52,317 - snowflake_feature_store - INFO - SUM_LIFE_TIME_VALUE_7: DoubleType()
+2025-02-17 20:37:52,317 - snowflake_feature_store - INFO - AVG_LIFE_TIME_VALUE_7: DoubleType()
+2025-02-17 20:37:52,318 - snowflake_feature_store - INFO - SUM_LIFE_TIME_VALUE_30: DoubleType()
+2025-02-17 20:37:52,318 - snowflake_feature_store - INFO - AVG_LIFE_TIME_VALUE_30: DoubleType()
+2025-02-17 20:37:52,319 - snowflake_feature_store - INFO - ENGAGEMENT_SCORE: DoubleType()
+2025-02-17 20:37:52,319 - snowflake_feature_store - INFO - AVG_TRANSACTION_VALUE: DoubleType()</code></pre>
+</div>
+</div>
+<div id="cell-34" class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Add metadata columns</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>training_data <span class="op">=</span> training_data.select(</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"*"</span>,  <span class="co"># Keep all existing columns</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    F.lit(training_start_date).alias(<span class="st">"TRAINING_START_DATE"</span>),</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    F.lit(training_end_date).alias(<span class="st">"TRAINING_END_DATE"</span>),</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>    F.lit(prediction_window).alias(<span class="st">"PREDICTION_WINDOW_DAYS"</span>),</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>    F.current_timestamp().alias(<span class="st">"GENERATED_AT"</span>)</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Save if table name provided</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> save_table:</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>    training_data.write.mode(<span class="st">"overwrite"</span>).save_as_table(save_table)</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="ss">f"Saved training data to </span><span class="sc">{</span>save_table<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Log data generation stats</span></span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="st">"</span><span class="ch">\n</span><span class="st">Training Data Statistics:"</span>)</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Total rows: </span><span class="sc">{</span>training_data<span class="sc">.</span>count()<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Date range: </span><span class="sc">{</span>training_start_date<span class="sc">}</span><span class="ss"> to </span><span class="sc">{</span>training_end_date<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>logger.info(<span class="ss">f"Prediction window: </span><span class="sc">{</span>prediction_window<span class="sc">}</span><span class="ss"> days"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2025-02-17 20:37:53,766 - snowflake_feature_store - INFO - Saved training data to DATASCIENCE.FEATURE_STORE_DEMO.LTV_TRAINING_DATA
+2025-02-17 20:37:53,767 - snowflake_feature_store - INFO - 
+Training Data Statistics:
+2025-02-17 20:37:54,593 - snowflake_feature_store - INFO - Total rows: 2400
+2025-02-17 20:37:54,594 - snowflake_feature_store - INFO - Date range: 2025-01-01 to 2025-03-01
+2025-02-17 20:37:54,594 - snowflake_feature_store - INFO - Prediction window: 90 days</code></pre>
+</div>
+</div>
+</section>
+<section id="best-practices-for-training-data" class="level3">
+<h3 class="anchored" data-anchor-id="best-practices-for-training-data">Best Practices for Training Data</h3>
+<ol type="1">
+<li><strong>Time Windows</strong>
+<ul>
+<li>Use appropriate training/validation splits</li>
+<li>Consider seasonal patterns</li>
+<li>Match prediction window to business needs</li>
+</ul></li>
+<li><strong>Feature Selection</strong>
+<ul>
+<li>Include all relevant features</li>
+<li>Document feature importance</li>
+<li>Track feature dependencies</li>
+</ul></li>
+<li><strong>Data Quality</strong>
+<ul>
+<li>Handle missing values consistently</li>
+<li>Check for data leakage</li>
+<li>Validate label quality</li>
+</ul></li>
+<li><strong>Documentation</strong>
+<ul>
+<li>Record generation parameters</li>
+<li>Track data lineage</li>
+<li>Document assumptions</li>
+</ul></li>
+</ol>
+</section>
+</section>
+<section id="conclusion-and-next-steps" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion-and-next-steps">Conclusion and Next Steps</h2>
+<section id="what-weve-built" class="level3">
+<h3 class="anchored" data-anchor-id="what-weve-built">What We’ve Built</h3>
+<p>We’ve created a comprehensive example of using Snowflake’s Feature Store for LTV prediction that demonstrates: 1. <strong>Feature Store Setup</strong>: Creating and managing a feature store 2. <strong>Entity Management</strong>: Defining and documenting customer entities 3. <strong>Feature Engineering</strong>: Creating and transforming features 4. <strong>Feature Views</strong>: Organizing and versioning features 5. <strong>Monitoring</strong>: Tracking feature quality and drift 6. <strong>Training Data</strong>: Generating point-in-time correct datasets</p>
+</section>
+<section id="potential-enhancements" class="level3">
+<h3 class="anchored" data-anchor-id="potential-enhancements">Potential Enhancements</h3>
+<p>Future versions could include: 1. <strong>Advanced Monitoring</strong> - Automated drift detection alerts - Custom validation rules - Feature quality dashboards - Historical metrics tracking</p>
+<ol start="2" type="1">
+<li><strong>Feature Discovery</strong>
+<ul>
+<li>Feature search capabilities</li>
+<li>Metadata management</li>
+<li>Usage tracking</li>
+<li>Documentation generation</li>
+</ul></li>
+<li><strong>Production Integration</strong>
+<ul>
+<li>CI/CD pipeline integration</li>
+<li>Automated testing</li>
+<li>Deployment workflows</li>
+<li>Model registry integration</li>
+</ul></li>
+<li><strong>Performance Optimization</strong>
+<ul>
+<li>Incremental updates</li>
+<li>Caching strategies</li>
+<li>Query optimization</li>
+<li>Resource management</li>
+</ul></li>
+</ol>
+</section>
+<section id="best-practices" class="level3">
+<h3 class="anchored" data-anchor-id="best-practices">Best Practices</h3>
+<p>When using this template: 1. <strong>Documentation</strong> - Document feature definitions - Explain business logic - Track dependencies - Maintain version history</p>
+<ol start="2" type="1">
+<li><strong>Testing</strong>
+<ul>
+<li>Validate feature logic</li>
+<li>Check data quality</li>
+<li>Test transformations</li>
+<li>Verify point-in-time correctness</li>
+</ul></li>
+<li><strong>Monitoring</strong>
+<ul>
+<li>Set up drift detection</li>
+<li>Track feature freshness</li>
+<li>Monitor data quality</li>
+<li>Alert on issues</li>
+</ul></li>
+<li><strong>Governance</strong>
+<ul>
+<li>Manage access controls</li>
+<li>Track lineage</li>
+<li>Enforce standards</li>
+<li>Maintain audit logs</li>
+</ul></li>
+</ol>
+</section>
+<section id="using-this-template" class="level3">
+<h3 class="anchored" data-anchor-id="using-this-template">Using This Template</h3>
+<p>To adapt this example: 1. Replace LTV-specific logic with your use case 2. Adjust feature definitions and transformations 3. Customize monitoring thresholds 4. Add domain-specific validation</p>
+</section>
+<section id="resources" class="level3">
+<h3 class="anchored" data-anchor-id="resources">Resources</h3>
+<p>For more information: 1. <a href="https://docs.snowflake.com/en/user-guide/feature-store">Snowflake Feature Store Documentation</a> 2. <a href="https://docs.snowflake.com/en/user-guide/feature-store-use">Feature Store Best Practices</a> 3. <a href="https://docs.snowflake.com/en/developer-guide/snowpark-ml/index">Snowpark ML Documentation</a> 4. <a href="https://github.com/Snowflake-Labs/snowpark-python-examples">Feature Store Examples</a></p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/Jeremy-Demlow\.github\.io\/sf-feature-store");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/Jeremy-Demlow/sf-feature-store/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
