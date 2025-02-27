@@ -19,9 +19,9 @@ from .logging import logger
 from .config import BaseModel
 
 # %% auto 0
-__all__ = ['TransformConfig', 'Transform', 'ValidationMixin', 'WindowSpec', 'WindowTransform', 'window_agg', 'FillNATransform',
-           'fill_na', 'DateDiffTransform', 'date_diff', 'MovingAggTransform', 'moving_agg', 'CumulativeAggTransform',
-           'cumulative_agg', 'apply_transforms']
+__all__ = ['TransformConfig', 'Transform', 'ValidationMixin', 'CustomTransform', 'WindowSpec', 'WindowTransform', 'window_agg',
+           'FillNATransform', 'fill_na', 'DateDiffTransform', 'date_diff', 'MovingAggTransform', 'moving_agg',
+           'CumulativeAggTransform', 'cumulative_agg', 'apply_transforms']
 
 # %% ../nbs/06_transforms.ipynb 3
 class TransformConfig(BaseModel):
@@ -110,6 +110,24 @@ class ValidationMixin:
             raise
 
 # %% ../nbs/06_transforms.ipynb 6
+class CustomTransform(ValidationMixin):
+    """Wrapper for custom transformations"""
+    def __init__(
+        self,
+        transform_func: Callable[[DataFrame], DataFrame],
+        config: TransformConfig
+    ):
+        self._transform = transform_func
+        self._config = config
+        
+    @property
+    def config(self) -> TransformConfig:
+        return self._config
+        
+    def __call__(self, df: DataFrame) -> DataFrame:
+        return self._transform(df)
+
+# %% ../nbs/06_transforms.ipynb 7
 @dataclass
 class WindowSpec:
     """Configuration for window-based transformations"""
@@ -136,7 +154,7 @@ class WindowSpec:
             )
         return window
 
-# %% ../nbs/06_transforms.ipynb 7
+# %% ../nbs/06_transforms.ipynb 8
 class WindowTransform(ValidationMixin):
     """Window-based aggregation transform"""
     
@@ -182,7 +200,7 @@ class WindowTransform(ValidationMixin):
             logger.error(f"Window transform failed: {str(e)}")
             raise
 
-# %% ../nbs/06_transforms.ipynb 8
+# %% ../nbs/06_transforms.ipynb 9
 def window_agg(
     agg_cols: Dict[str, List[str]],
     window_spec: WindowSpec,
@@ -209,7 +227,7 @@ def window_agg(
     """
     return WindowTransform(agg_cols, window_spec, config)
 
-# %% ../nbs/06_transforms.ipynb 9
+# %% ../nbs/06_transforms.ipynb 10
 class FillNATransform(ValidationMixin):
     def __init__(
         self, 
@@ -256,7 +274,7 @@ class FillNATransform(ValidationMixin):
             logger.error(f"Fill NA transform failed: {str(e)}")
             raise
 
-# %% ../nbs/06_transforms.ipynb 10
+# %% ../nbs/06_transforms.ipynb 11
 def fill_na(
     cols: Union[str, List[str]], 
     fill_value: Union[int, float, str] = 0,
@@ -282,7 +300,7 @@ def fill_na(
     return FillNATransform(cols, fill_value, config)
 
 
-# %% ../nbs/06_transforms.ipynb 11
+# %% ../nbs/06_transforms.ipynb 12
 class DateDiffTransform(ValidationMixin):
     """Calculate date difference between column and reference"""
     
@@ -338,7 +356,7 @@ class DateDiffTransform(ValidationMixin):
 
 
 
-# %% ../nbs/06_transforms.ipynb 12
+# %% ../nbs/06_transforms.ipynb 13
 def date_diff(
     col: str,
     new_col: str,
@@ -367,7 +385,7 @@ def date_diff(
     """
     return DateDiffTransform(col, new_col, reference_date, date_part, config)
 
-# %% ../nbs/06_transforms.ipynb 13
+# %% ../nbs/06_transforms.ipynb 14
 class MovingAggTransform(ValidationMixin):
     """Calculate moving window aggregations"""
     
@@ -429,7 +447,7 @@ class MovingAggTransform(ValidationMixin):
             raise
 
 
-# %% ../nbs/06_transforms.ipynb 14
+# %% ../nbs/06_transforms.ipynb 15
 def moving_agg(
     cols: Union[str, List[str]],
     window_sizes: List[int],
@@ -470,7 +488,7 @@ def moving_agg(
         partition_by, order_by, config
     )
 
-# %% ../nbs/06_transforms.ipynb 15
+# %% ../nbs/06_transforms.ipynb 16
 class CumulativeAggTransform(ValidationMixin):
     """Calculate cumulative aggregations"""
     
@@ -525,7 +543,7 @@ class CumulativeAggTransform(ValidationMixin):
             logger.error(f"Cumulative aggregation transform failed: {str(e)}")
             raise
 
-# %% ../nbs/06_transforms.ipynb 16
+# %% ../nbs/06_transforms.ipynb 17
 def cumulative_agg(
     cols: Union[str, List[str]],
     agg_funcs: List[str] = ['SUM'],
@@ -562,7 +580,7 @@ def cumulative_agg(
         cols, agg_funcs, partition_by, order_by, config
     )
 
-# %% ../nbs/06_transforms.ipynb 17
+# %% ../nbs/06_transforms.ipynb 18
 def apply_transforms(df: DataFrame, transforms: List[Transform]) -> DataFrame:
     """Apply a list of transformations to a DataFrame
     

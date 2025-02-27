@@ -83,25 +83,14 @@ Before using this library, you’ll need:
 
 ### vs. Direct Snowflake Feature Store API
 
-| Feature | This Library | Direct Snowflake API |
-|----|----|----|
-| Learning Curve | Simplified, higher-level abstractions | Steeper, requires more Snowflake-specific knowledge |
-| Feature Validation | Built-in validation rules, drift detection | Manual implementation required |
-| Transformations | Pre-built, composable transformation library | Custom SQL implementation required |
-| Point-in-time Training | Simplified API with safeguards | More manual configuration |
-| Monitoring | Built-in drift detection and metrics | Manual implementation required |
-| Documentation | Auto-generated feature documentation | Manual documentation |
-
-### vs. Other Feature Store Solutions
-
-| Feature | Snowflake Feature Store | Feast | Tecton | Hopsworks |
-|----|----|----|----|----|
-| Integration with Snowflake | Native | Limited | Partial | Limited |
-| Infrastructure Required | Minimal (Snowflake only) | Moderate | Complex | Complex |
-| Real-time Serving | Through Snowpark | Yes | Yes | Yes |
-| Offline Storage | Snowflake Tables | Multiple backends | Multiple backends | Multiple backends |
-| Pricing Model | Based on Snowflake usage | Open-source + self-hosting | Subscription | Open-source + self-hosting |
-| Learning Curve | Moderate | Steep | Moderate | Steep |
+| Feature                | This Library                                 |
+|------------------------|----------------------------------------------|
+| Learning Curve         | Simplified, higher-level abstractions        |
+| Feature Validation     | Built-in validation rules, drift detection   |
+| Transformations        | Pre-built, composable transformation library |
+| Point-in-time Training | Simplified API with safeguards               |
+| Monitoring             | Built-in drift detection and metrics         |
+| Documentation          | Auto-generated feature documentation         |
 
 ## Install
 
