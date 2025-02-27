@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from fastcore.basics import listify
 import snowflake.snowpark.functions as F
 from snowflake.snowpark import DataFrame, Window
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 import pandas as pd
 
 
@@ -38,7 +38,8 @@ class TransformConfig(BaseModel):
         description="List of acceptable types (e.g., ['DECIMAL', 'DOUBLE', 'NUMBER'] for numeric)"
     )
 
-    @validator('expected_types')
+    @field_validator('expected_types')
+    @classmethod
     def validate_types(cls, v):
         if v is not None:
             valid_types = {'DECIMAL', 'DOUBLE', 'NUMBER', 'INT', 'LONG', 'STRING', 'BOOLEAN', 'DATE', 'TIMESTAMP'}
@@ -46,7 +47,6 @@ class TransformConfig(BaseModel):
                 if t.upper() not in valid_types:
                     raise ValueError(f"Invalid type: {t}. Must be one of {valid_types}")
         return v
-
 
 # %% ../nbs/06_transforms.ipynb 4
 class Transform(Protocol):

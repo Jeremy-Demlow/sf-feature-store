@@ -5,7 +5,7 @@
 # %% ../nbs/01_config.ipynb 2
 from __future__ import annotations
 from typing import Optional, Dict, List, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from datetime import timedelta
 import yaml
 from pathlib import Path
@@ -23,7 +23,8 @@ class RefreshConfig(BaseModel):
     frequency: str = Field("1 day", description="Refresh frequency (e.g., '1 day', '30 minutes')")
     mode: str = Field("FULL", description="Refresh mode (FULL or INCREMENTAL)")
     
-    @validator('frequency')
+    @field_validator('frequency')
+    @classmethod
     def validate_frequency(cls, v):
         """Validate refresh frequency format"""
         try:
@@ -49,7 +50,6 @@ class RefreshConfig(BaseModel):
                 f"Invalid refresh frequency: {v}. "
                 "Use either cron expression or duration (e.g., '1 day', '30 minutes')"
             )
-
 
 # %% ../nbs/01_config.ipynb 4
 class FeatureValidationConfig(BaseModel):
@@ -129,7 +129,7 @@ class FeatureViewConfig(BaseModel):
         """Save configuration to YAML file"""
         try:
             with open(path, 'w') as f:
-                yaml.dump(self.dict(), f)
+                yaml.dump(self.model_dump(), f)
         except Exception as e:
             raise ConfigurationError(f"Error saving config to {path}: {str(e)}")
 
