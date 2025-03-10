@@ -19,7 +19,6 @@ clean-targets:
 
 models:
   instacart:
-
     core:
       +query_tag: dbt_core
       +tags: ["core"]
@@ -44,7 +43,7 @@ models:
       +materialized: table
     
       ml:
-        +query_tag: dbt_ml
+        +query_tag: {'dbt_ml' : {'dev', 'JIRA-1234'}}
         +tags: ["ml"]
         +materialized: table
 
