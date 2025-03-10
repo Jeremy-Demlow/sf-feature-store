@@ -1,0 +1,72 @@
+version: 2
+
+models:
+  - name: stg_instacart__aisles
+    description: Cleaned product aisles data
+    columns:
+      - name: aisle_id
+        description: Unique identifier for aisles
+        tests:
+          - unique
+          - not_null
+      - name: aisle_name
+        description: Name of the aisle
+
+  - name: stg_instacart__departments
+    description: Cleaned product departments data
+    columns:
+      - name: department_id
+        description: Unique identifier for departments
+        tests:
+          - unique
+          - not_null
+      - name: department_name
+        description: Name of the department
+
+  - name: stg_instacart__products
+    description: Cleaned product details
+    columns:
+      - name: product_id
+        description: Unique identifier for products
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: Name of the product
+      - name: aisle_id
+        description: Foreign key to aisles
+      - name: department_id
+        description: Foreign key to departments
+
+  - name: stg_instacart__orders
+    description: Cleaned order details
+    columns:
+      - name: order_id
+        description: Unique identifier for orders
+        tests:
+          - unique
+          - not_null
+      - name: user_id
+        description: Identifier for users
+      - name: order_number
+        description: Sequential order number for the user
+      - name: order_dow
+        description: Day of week the order was placed (0-6)
+      - name: order_hour_of_day
+        description: Hour of day the order was placed (0-23)
+      - name: days_since_prior_order
+        description: Days since prior order
+      - name: eval_set
+        description: Which evaluation set this order belongs to (prior, train, test)
+
+  - name: stg_instacart__order_products
+    description: Cleaned products in orders data
+    columns:
+      - name: order_id
+        description: Foreign key to orders
+      - name: product_id
+        description: Foreign key to products
+      - name: cart_position
+        description: Order in which the product was added to cart
+      - name: is_reordered
+        description: Flag indicating if the product has been ordered by this user before (0/1)

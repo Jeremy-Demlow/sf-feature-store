@@ -1,0 +1,54 @@
+name: 'instacart'
+version: '1.0.0'
+config-version: 2
+
+profile: 'dbt_feature_store_example_kaggle'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "logs"
+
+models:
+  instacart:
+
+    core:
+      +query_tag: dbt_core
+      +tags: ["core"]
+    +materialized: view
+    +schema: transform
+    
+    staging:
+      +query_tag: dbt_staging
+      +schema: staging
+      +materialized: view
+      
+    intermediate:
+      +query_tag: dbt_intermediate
+      +tags: ["intermediate"]
+      +schema: intermediate
+      +materialized: table
+      
+    marts:
+      +query_tag: dbt_marts
+      +tags: ["marts"]
+      +schema: marts
+      +materialized: table
+    
+      ml:
+        +query_tag: dbt_ml
+        +tags: ["ml"]
+        +materialized: table
+
+vars:
+  time_windows: [7, 30, 90]
+  eval_set: "prior"
+  min_orders: 4

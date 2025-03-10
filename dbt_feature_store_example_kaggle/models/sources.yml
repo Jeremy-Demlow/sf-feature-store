@@ -1,0 +1,96 @@
+version: 2
+
+sources:
+  - name: instacart_raw
+    database: "{{ env_var('DBT_DATABASE', 'DATASCIENCE') }}"
+    schema: INSTACART_RAW
+    description: Raw Instacart data loaded from CSV files
+    
+    tables:
+      - name: AISLES
+        description: Product aisles
+        columns:
+          - name: AISLE_ID
+            description: Unique identifier for aisles
+            tests:
+              - unique
+              - not_null
+          - name: AISLE
+            description: Name of the aisle
+            
+      - name: DEPARTMENTS
+        description: Product departments
+        columns:
+          - name: DEPARTMENT_ID
+            description: Unique identifier for departments
+            tests:
+              - unique
+              - not_null
+          - name: DEPARTMENT
+            description: Name of the department
+            
+      - name: PRODUCTS
+        description: Product details
+        columns:
+          - name: PRODUCT_ID
+            description: Unique identifier for products
+            tests:
+              - unique
+              - not_null
+          - name: PRODUCT_NAME
+            description: Name of the product
+          - name: AISLE_ID
+            description: Foreign key to aisles
+            tests:
+              - relationships:
+                  to: source('instacart_raw', 'AISLES')
+                  field: AISLE_ID
+          - name: DEPARTMENT_ID
+            description: Foreign key to departments
+            tests:
+              - relationships:
+                  to: source('instacart_raw', 'DEPARTMENTS')
+                  field: DEPARTMENT_ID
+                  
+      - name: ORDERS
+        description: Order details
+        columns:
+          - name: ORDER_ID
+            description: Unique identifier for orders
+            tests:
+              - unique
+              - not_null
+          - name: USER_ID
+            description: Identifier for users
+            tests:
+              - not_null
+          - name: ORDER_NUMBER
+            description: Sequential order number for the user
+          - name: ORDER_DOW
+            description: Day of week the order was placed
+          - name: ORDER_HOUR_OF_DAY
+            description: Hour of day the order was placed
+          - name: DAYS_SINCE_PRIOR_ORDER
+            description: Days since prior order
+          - name: EVAL_SET
+            description: Which evaluation set this order belongs to (prior, train, test)
+            
+      - name: ORDER_PRODUCTS
+        description: Products in orders (combines prior and train datasets)
+        columns:
+          - name: ORDER_ID
+            description: Foreign key to orders
+            tests:
+              - relationships:
+                  to: source('instacart_raw', 'ORDERS')
+                  field: ORDER_ID
+          - name: PRODUCT_ID
+            description: Foreign key to products
+            tests:
+              - relationships:
+                  to: source('instacart_raw', 'PRODUCTS')
+                  field: PRODUCT_ID
+          - name: ADD_TO_CART_ORDER
+            description: Order in which the product was added to cart
+          - name: REORDERED
+            description: Flag indicating if the product has been ordered by this user before
