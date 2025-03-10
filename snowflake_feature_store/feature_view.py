@@ -14,8 +14,8 @@ import json
 # Import our modules
 from .exceptions import FeatureViewError, ValidationError
 from .logging import logger
-from snowflake_feature_store.config import (
-    BaseModel, Field, FeatureViewConfig, 
+from pydantic import BaseModel, Field, field_validator
+from snowflake_feature_store.config import (FeatureViewConfig, 
     FeatureConfig, RefreshConfig
 )
 from snowflake.snowpark.types import (

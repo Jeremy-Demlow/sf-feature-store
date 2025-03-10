@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: instacart__user_features
+    description: User-level features for Instacart behavior prediction
+    columns:
+      - name: user_id
+        description: Unique identifier for users
+        tests:
+          - unique
+          - not_null
+  
+  - name: instacart__product_features
+    description: Product-level features for Instacart behavior prediction
+    columns:
+      - name: product_id
+        description: Unique identifier for products
+        tests:
+          - unique
+          - not_null
+  
+  - name: instacart__order_features
+    description: Order-level features for Instacart behavior prediction
+    columns:
+      - name: order_id
+        description: Unique identifier for orders
+        tests:
+          - unique
+          - not_null
+  
+  - name: instacart__user_product_features
+    description: User-product interaction features for Instacart behavior prediction
+    columns:
+      - name: user_id
+        description: User identifier in the interaction
+        tests:
+          - not_null
+      - name: product_id
+        description: Product identifier in the interaction
+        tests:
+          - not_null
+      - name: user_product_id
+        description: Composite key for user-product interaction
+        tests:
+          - unique
+          - not_null
+  
+  - name: instacart__training_features
+    description: Combined features for ML training for reorder prediction
+    columns:
+      - name: user_id
+        description: User identifier
+        tests:
+          - not_null
+      - name: product_id
+        description: Product identifier
+        tests:
+          - not_null
+      - name: order_id
+        description: Order identifier
+        tests:
+          - not_null
+      - name: reordered
+        description: Target variable indicating if product was reordered (1) or not (0)
